@@ -4,7 +4,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/hooks/use-auth";
 import logoImg from "@assets/b5631c0e-bdc3-4a08-8584-9e6cbfec8cc2_1774916046934.jpg";
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,9 +91,10 @@ export function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="text-white hover:text-tarteel-gold hover:bg-white/10 uppercase font-bold"
+                className="text-white hover:text-tarteel-gold hover:bg-white/10 font-bold flex items-center gap-1.5"
               >
-                {language}
+                <Globe size={18} />
+                <span className="uppercase">{language}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
