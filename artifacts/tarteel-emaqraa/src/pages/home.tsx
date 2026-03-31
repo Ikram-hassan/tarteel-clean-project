@@ -47,16 +47,16 @@ export default function Home() {
             >
               <div className="relative flex items-center justify-center">
                 {/* Outer glow ring */}
-                <div className="absolute w-80 h-80 md:w-96 md:h-96 rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
+                <div className="absolute w-96 h-96 md:w-[28rem] md:h-[28rem] rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
                 {/* Dashed ring */}
-                <div className="absolute w-72 h-72 md:w-84 md:h-84 rounded-full border border-dashed border-tarteel-gold/30" />
+                <div className="absolute w-80 h-80 md:w-[24rem] md:h-[24rem] rounded-full border border-dashed border-tarteel-gold/30" />
                 {/* Solid inner ring */}
-                <div className="absolute w-64 h-64 md:w-76 md:h-76 rounded-full border-2 border-tarteel-gold/40" />
+                <div className="absolute w-72 h-72 md:w-[21rem] md:h-[21rem] rounded-full border-2 border-tarteel-gold/40" />
                 {/* Logo */}
                 <img
                   src={logoImg}
                   alt="Tarteel E-Maqraa Logo"
-                  className="relative z-10 w-56 h-56 md:w-72 md:h-72 rounded-full border-4 border-tarteel-gold shadow-[0_0_80px_rgba(201,168,76,0.3)] object-cover"
+                  className="relative z-10 w-64 h-64 md:w-80 md:h-80 rounded-full border-4 border-tarteel-gold shadow-[0_0_100px_rgba(201,168,76,0.35)] object-cover"
                 />
                 {/* Gold dot accents */}
                 <div className="absolute top-4 right-8 w-3 h-3 rounded-full bg-tarteel-gold/60" />
