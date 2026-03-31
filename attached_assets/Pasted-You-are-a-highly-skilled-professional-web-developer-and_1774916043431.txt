@@ -1,0 +1,143 @@
+You are a highly skilled professional web developer and UI/UX designer with experience in building modern, scalable, and user-friendly platforms. Your task is to design and develop a complete frontend application for an advanced global Quran learning platform. You must focus on creating a clean, elegant, and highly intuitive user experience while maintaining a modern Islamic visual identity. Ensure the design is responsive, component-based, and ready for future backend integration.
+Project Name: Tarteel E-Maqraa
+Tech Stack: React + Tailwind CSS
+Design Inspiration: https://itqan-quran.com/
+Color Palette:
+•	White   and Use Islamic geometric patterns like Itqan website
+•	Soft Gray 
+•	Orange (buttons, highlights) 
+•	Dark Maroon (headings, accents) 
+•	Gold (subtle Islamic decoration) 
+Design Requirements:
+•	Clean, minimal, modern Islamic look 
+•	Use Islamic geometric patterns like Itqan Quran (subtle, non-distracting) 
+•	Fully responsive (mobile + desktop) 
+•	Smooth animations, rounded cards, subtle shadows 
+•	User-friendly, comfortable for the eyes 
+•	Component-based structure 
+•	Comments in Arabic in code explaining sections 
+•	Prepare project for backend integration (Firebase/API) 
+Languages:
+•	Default: English 
+•	Support Arabic and Somali 
+•	Language switcher in navbar 
+Logo:
+•	Upload provided logo → show in navbar & footer 
+Important: Design and create the app simultaneously (UI + interactive components), not just static design.
+________________________________________
+Pages Structure (6 Pages)
+1) Home Page
+•	Navbar: language switcher, blended with background 
+•	Hero Section: 
+o	Elegant tagline: "First platform in the world using the Somali Saba’ system to produce skilled students" 
+o	Short description 
+o	CTA button: Start Learning 
+o	Image on side (balanced, visually appealing) 
+o	Gold Islamic geometric decoration (like Itqan Quran) 
+•	Section 2:    explaining registration https://pin.it/12uC2NpTS
+•	Section 2: Levels Overview (Beginner / Intermediate / Advanced) 
+•	Section 3: About the institute (short preview) 
+•	Section 4: Scholars testimonials 
+•	Section 5: Contact / Footer 
+•	Floating side buttons: AI Tajweed Assistant (chat), Technical Support (email) 
+________________________________________
+2) Institute Page (Local – Mogadishu focus)
+•	Full institute info 
+•	Achievements 
+•	Announcements 
+•	Image gallery 
+•	Local activities in Mogadishu 
+•	Islamic decorative patterns as per Itqan Quran style 
+________________________________________
+3) Registration / Auth Page
+Step 1: Choose role (Admin / Teacher / Student)
+Step 2: Collect info
+•	Admin: Name, Email, Password, Pre-issued Verification Code → opens Admin Dashboard 
+•	Teacher: Name, Email, Password, Phone → email admin to get verification code → enter code → Dashboard 
+•	Student: Name, Email, Password, Phone → 15-day free trial → after trial: subscription required 
+o	Choose: Days per week (5 or 7) 
+o	Select Tajweed exam before moving to Hifz/Review 
+Step 3: Login
+•	Admin & Teacher: Name + Verification Code 
+•	Student: Name + Password 
+________________________________________
+4) Dashboard
+Admin View:
+•	Manage Teachers, Students, Classes, Schedules 
+•	Certificates Section → issue official certificates 
+•	Access any live class/session 
+•	Track student progress, attendance, levels 
+Teacher View:
+•	Open/manage up to 4 simultaneous live classes, 5 students per class (max 20 students) 
+•	Choose major level first: 
+o	Beginner: Tajweed 
+o	Intermediate: Hifz/Review (6 sub-levels based on parts memorized) 
+o	Advanced: Ijaza (3 sub-levels: Hafs ‘an Asim, Qawa’id, Diraayah) 
+•	System alerts teacher before student moves to next level → teacher approves/rejects 
+•	Track student progress, attendance, Saba’ sessions 
+•	Assign “Master Student” per Saba’ 
+•	Record session start/end, duration, attendance (future AI tracking for corrections) 
+Student View:
+•	Take Tajweed Exam → determines starting level 
+•	Participate in Saba’ sessions (5 students per mini-class) 
+•	Hifz/Review Level → 6 sub-levels based on parts memorized 
+•	Live Class: raise hand, chat 
+•	Dashboard: current level, upcoming classes, attendance 
+•	Subscription info after free trial (5 days/week: $20, 7 days/week: $25, etc.) 
+________________________________________
+5) Live Class Page
+•	Teacher: 4 simultaneous sessions, 5 students each 
+•	Student: raise hand, chat, follow teacher 
+•	Teacher: correct, approve student answers, assign Master Student 
+•	Record start/end, attendance, session duration 
+•	System prepares for future AI tracking of errors & corrections 
+________________________________________
+6) Certificates Page (Admin)
+•	Issue official completion certificates for students 
+•	Track all issued certificates 
+•	Connect to Dashboard 
+________________________________________
+Levels & Progression Logic
+Beginner – Tajweed:
+•	Pass Tajweed Exam → unlock Hifz/Review 
+Intermediate – Hifz & Review:
+Level	Parts Memorized	Notes
+1	1–5	Start if <5 parts
+2	6–10	Move after 5 parts
+3	11–15	Move after 10 parts
+4	16–20	Move after 15 parts
+5	21–25	Move after 20 parts
+6	26–30	Move after 25 parts
+•	System auto-tracks progress 
+•	Teacher notified → approve/reject movement 
+•	Auto-approve if no teacher action within 1 week 
+Advanced – Ijaza:
+•	Level 1: Hafs ‘an Asim → Saba’ + Hifz review 
+•	Level 2: Qawa’id (study memorized texts) → teacher listens individually → Saba’ review in groups of 5 
+•	Level 3: Diraayah → mini-classes based on reading style 
+________________________________________
+Other Rules & Features
+•	Student cannot leave class alone → teacher informs admin → admin approves exit 
+•	Teacher absence → notify admin → system suggests substitute 
+•	2 absences/month → report to admin
+•	Students continue review sessions if teacher absent 
+•	Global schedule synchronization: teacher/student selects available days/hours 
+•	Weekly/monthly exams managed by teacher (monthly exam: 4th Friday, proctored if needed) 
+•	Attendance: tracked, repeated absences trigger admin alert 
+________________________________________
+UI & Animation
+•	Smooth transitions in dashboards & live classes 
+•	Cards for levels, classes, students 
+•	Rounded corners, shadows, hover effects 
+•	Mobile-friendly layouts 
+•	Hero section: "First platform in the world using Somali Saba’ method" 
+•	Gold decorative touches + Islamic geometric patterns (Itqan Quran style) 
+________________________________________
+Final Notes
+•	Design & app creation simultaneously (UI + interactive components) 
+•	Component-based React structure 
+•	Arabic comments for clarity in code 
+•	Prepared for backend integration (Firebase/API) 
+•	Fully responsive & user-friendly 
+________________________________________
+

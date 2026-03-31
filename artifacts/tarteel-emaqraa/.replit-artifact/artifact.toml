@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Tarteel E-Maqraa"
+version = "1.0.0"
+id = "artifacts/tarteel-emaqraa"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26032
+
+[services.development]
+run = "pnpm --filter @workspace/tarteel-emaqraa run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tarteel-emaqraa", "run", "build" ]
+publicDir = "artifacts/tarteel-emaqraa/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26032"
+BASE_PATH = "/"
