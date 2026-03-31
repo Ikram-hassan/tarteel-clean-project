@@ -1,12 +1,23 @@
 import { useState } from "react";
 import { useLanguage } from "@/hooks/use-language";
-import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, LogOut, Settings, Users, Monitor, Maximize } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function LiveClass() {
   const { t, dir } = useLanguage();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  // تحديد مسار لوحة التحكم بناءً على دور المستخدم
+  const dashboardPath =
+    user?.role === "admin"
+      ? "/dashboard/admin"
+      : user?.role === "teacher"
+      ? "/dashboard/teacher"
+      : "/dashboard/student";
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -186,10 +197,13 @@ export default function LiveClass() {
           >
             <MessageSquare size={20} className="mr-2" /> Chat
           </Button>
-          <Button asChild variant="destructive" className="font-bold">
-            <Link href="/dashboard">
-              <LogOut size={18} className="mr-2" /> Leave
-            </Link>
+          <Button
+            variant="destructive"
+            className="font-bold"
+            onClick={() => setLocation(dashboardPath)}
+            data-testid="button-leave-class"
+          >
+            <LogOut size={18} className="mr-2" /> Leave
           </Button>
         </div>
       </div>
