@@ -4,6 +4,11 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Artifacts
+
+### `artifacts/tarteel-emaqraa` — Tarteel E-Maqraa (React + Vite)
+Full-featured Quran learning platform with Islamic design. Pages: Home, Institute, Register/Login, 3 role-based dashboards (Student/Teacher/Admin), Live Class, Certificates. Auth is managed client-side via `AuthContext` in `src/hooks/use-auth.tsx`. Verification code for Teacher/Admin: `tartiil2026`. Dashboards are protected routes — unauthenticated access redirects to `/register`. Multilingual: English, Arabic (RTL), Somali.
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
