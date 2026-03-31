@@ -13,6 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const LANGUAGES = [
+  { code: "en", label: "EN" },
+  { code: "ar", label: "AR" },
+  { code: "so", label: "SO" },
+] as const;
+
 export function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const { user, logout, isAuthenticated } = useAuth();
@@ -85,24 +91,22 @@ export function Navbar() {
         </nav>
 
         {/* الأزرار اليمنى */}
-        <div className="flex items-center gap-3">
-          {/* مبدّل اللغة */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="text-white hover:text-tarteel-gold hover:bg-white/10 font-bold flex items-center gap-1.5"
-              >
-                <Globe size={18} />
-                <span className="uppercase">{language}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("ar")}>العربية</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("so")}>Soomaali</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center gap-1">
+          {/* مبدّل اللغة — مرئي دائماً */}
+          <Globe size={16} className="text-white/60 mr-1" />
+          {LANGUAGES.map(({ code, label }) => (
+            <button
+              key={code}
+              onClick={() => setLanguage(code)}
+              className={`px-2.5 py-1 rounded text-sm font-bold transition-colors ${
+                language === code
+                  ? "bg-tarteel-gold text-white"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
 
           {/* قائمة الهاتف */}
           <div className="md:hidden">
