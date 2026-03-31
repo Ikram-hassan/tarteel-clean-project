@@ -38,14 +38,41 @@ export default function Home() {
         <div className="container relative z-10 mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
-            {/* Left — text content */}
+            {/* Left — logo with decorative rings */}
             <motion.div
-              initial={{ x: -30, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.9 }}
+              className="flex justify-center lg:justify-start"
+            >
+              <div className="relative flex items-center justify-center">
+                {/* Outer glow ring */}
+                <div className="absolute w-72 h-72 md:w-80 md:h-80 rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
+                {/* Dashed ring */}
+                <div className="absolute w-60 h-60 md:w-72 md:h-72 rounded-full border border-dashed border-tarteel-gold/30" />
+                {/* Solid inner ring */}
+                <div className="absolute w-52 h-52 md:w-64 md:h-64 rounded-full border-2 border-tarteel-gold/40" />
+                {/* Logo */}
+                <img
+                  src={logoImg}
+                  alt="Tarteel E-Maqraa Logo"
+                  className="relative z-10 w-44 h-44 md:w-56 md:h-56 rounded-full border-4 border-tarteel-gold shadow-[0_0_60px_rgba(201,168,76,0.25)] object-cover"
+                />
+                {/* Gold dot accents */}
+                <div className="absolute top-4 right-8 w-3 h-3 rounded-full bg-tarteel-gold/60" />
+                <div className="absolute bottom-6 left-6 w-2 h-2 rounded-full bg-tarteel-gold/40" />
+                <div className="absolute top-1/2 -right-4 w-2 h-2 rounded-full bg-tarteel-gold/50" />
+              </div>
+            </motion.div>
+
+            {/* Right — text content */}
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.8 }}
               className="flex flex-col items-start"
             >
-              {/* Ornamental bismillah line */}
+              {/* Ornamental label */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-px w-12 bg-tarteel-gold/60" />
                 <span className="text-tarteel-gold text-sm font-semibold uppercase tracking-widest">
@@ -58,7 +85,6 @@ export default function Home() {
                 {t('heroTagline')}
               </h1>
 
-              {/* Short tagline divider */}
               <div className="w-16 h-1 bg-tarteel-gold rounded-full mb-6" />
 
               <p className="text-white/70 text-base md:text-lg leading-relaxed mb-10 max-w-lg">
@@ -85,33 +111,6 @@ export default function Home() {
                   Learn about the institute
                 </Link>
               </motion.div>
-            </motion.div>
-
-            {/* Right — logo with decorative rings */}
-            <motion.div
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.9 }}
-              className="flex justify-center lg:justify-end"
-            >
-              <div className="relative flex items-center justify-center">
-                {/* Outer glow ring */}
-                <div className="absolute w-72 h-72 md:w-80 md:h-80 rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
-                {/* Dashed ring */}
-                <div className="absolute w-60 h-60 md:w-72 md:h-72 rounded-full border border-dashed border-tarteel-gold/30" />
-                {/* Solid inner ring */}
-                <div className="absolute w-52 h-52 md:w-64 md:h-64 rounded-full border-2 border-tarteel-gold/40" />
-                {/* Logo */}
-                <img
-                  src={logoImg}
-                  alt="Tarteel E-Maqraa Logo"
-                  className="relative z-10 w-44 h-44 md:w-56 md:h-56 rounded-full border-4 border-tarteel-gold shadow-[0_0_60px_rgba(201,168,76,0.25)] object-cover"
-                />
-                {/* Gold dot accents */}
-                <div className="absolute top-4 right-8 w-3 h-3 rounded-full bg-tarteel-gold/60" />
-                <div className="absolute bottom-6 left-6 w-2 h-2 rounded-full bg-tarteel-gold/40" />
-                <div className="absolute top-1/2 -right-4 w-2 h-2 rounded-full bg-tarteel-gold/50" />
-              </div>
             </motion.div>
 
           </div>
