@@ -29,7 +29,7 @@ const VERIFICATION_CODE = "tartiil2026";
 
 export default function Register() {
   const { t, dir } = useLanguage();
-  const { login } = useAuth();
+  const { login, registerUser, validateLogin } = useAuth();
   const [, setLocation] = useLocation();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -73,6 +73,13 @@ export default function Register() {
       return;
     }
 
+    // حفظ المستخدم في القائمة المسجلة (localStorage)
+    const result = registerUser({ name, email, role, password });
+    if (!result.success) {
+      setError(result.error || "Registration failed.");
+      return;
+    }
+
     login({ name, email, role });
     setLocation(dashboardPath(role));
   };
@@ -87,19 +94,26 @@ export default function Register() {
       return;
     }
 
+    // للمعلم/المدير: التحقق من رمز التحقق أولاً قبل البحث في القائمة
     if (loginRole === "admin" || loginRole === "teacher") {
       if (loginCode !== VERIFICATION_CODE) {
         setError("Invalid verification code. Please check with the administrator.");
         return;
       }
-    } else {
-      if (!loginPassword.trim()) {
-        setError("Please enter your password.");
-        return;
-      }
     }
 
-    login({ name: loginName, email: "", role: loginRole });
+    // التحقق من وجود الحساب في القائمة المسجلة
+    const result = validateLogin(
+      loginName,
+      loginRole,
+      loginRole === "student" ? loginPassword : loginCode
+    );
+    if (!result.success) {
+      setError(result.error || "Login failed.");
+      return;
+    }
+
+    login({ name: result.user!.name, email: result.user!.email, role: loginRole });
     setLocation(dashboardPath(loginRole));
   };
 
