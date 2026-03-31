@@ -36,7 +36,7 @@ export default function Home() {
         <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-56 h-56 rounded-full border-[3px] border-tarteel-gold/10 pointer-events-none" />
 
         <div className="container relative z-10 mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
 
             {/* Left — logo with decorative rings */}
             <motion.div
@@ -47,16 +47,16 @@ export default function Home() {
             >
               <div className="relative flex items-center justify-center">
                 {/* Outer glow ring */}
-                <div className="absolute w-72 h-72 md:w-80 md:h-80 rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
+                <div className="absolute w-80 h-80 md:w-96 md:h-96 rounded-full border-2 border-tarteel-gold/25 animate-[spin_30s_linear_infinite]" />
                 {/* Dashed ring */}
-                <div className="absolute w-60 h-60 md:w-72 md:h-72 rounded-full border border-dashed border-tarteel-gold/30" />
+                <div className="absolute w-72 h-72 md:w-84 md:h-84 rounded-full border border-dashed border-tarteel-gold/30" />
                 {/* Solid inner ring */}
-                <div className="absolute w-52 h-52 md:w-64 md:h-64 rounded-full border-2 border-tarteel-gold/40" />
+                <div className="absolute w-64 h-64 md:w-76 md:h-76 rounded-full border-2 border-tarteel-gold/40" />
                 {/* Logo */}
                 <img
                   src={logoImg}
                   alt="Tarteel E-Maqraa Logo"
-                  className="relative z-10 w-44 h-44 md:w-56 md:h-56 rounded-full border-4 border-tarteel-gold shadow-[0_0_60px_rgba(201,168,76,0.25)] object-cover"
+                  className="relative z-10 w-56 h-56 md:w-72 md:h-72 rounded-full border-4 border-tarteel-gold shadow-[0_0_80px_rgba(201,168,76,0.3)] object-cover"
                 />
                 {/* Gold dot accents */}
                 <div className="absolute top-4 right-8 w-3 h-3 rounded-full bg-tarteel-gold/60" />
@@ -87,8 +87,8 @@ export default function Home() {
 
               <div className="w-16 h-1 bg-tarteel-gold rounded-full mb-6" />
 
-              <p className="text-white/70 text-base md:text-lg leading-relaxed mb-10 max-w-lg">
-                Preserving the classical Somali Saba' system — bringing authentic Quran education to students worldwide.
+              <p className="text-white/70 text-base md:text-lg leading-relaxed mb-10 max-w-lg italic">
+                "We gather to study the Book of God...wherever we are."
               </p>
 
               <motion.div
