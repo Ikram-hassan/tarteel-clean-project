@@ -1,5 +1,13 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
+# [IMPORTANT] Environment Secret Files
+# تم إضافة هذه الأسطر لحماية DATABASE_URL وباسورد قاعدة البيانات
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # compiled output
 dist
 tmp
@@ -44,6 +52,9 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Replit & Artifacts
 .cache/
 .local/
+.replit-artifact
+# هذا المجلد يحتوي على ملفات مؤقتة للسيرفر
+artifacts/api-server/dist/

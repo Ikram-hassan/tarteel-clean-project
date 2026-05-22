@@ -1,4 +1,6 @@
-// شريط التنقل العلوي - يُظهر روابط مختلفة حسب حالة المصادقة
+"use client";
+
+import { useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,13 +26,22 @@ export function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  // رابط لوحة التحكم بناءً على دور المستخدم
-  const dashboardPath =
-    user?.role === "admin"
-      ? "/dashboard/admin"
-      : user?.role === "teacher"
-      ? "/dashboard/teacher"
-      : "/dashboard/student";
+  // حساب رابط لوحة التحكم بناءً على دور المستخدم (بما في ذلك المختبر)
+  const dashboardPath = useMemo(() => {
+    if (!user) return "/register";
+
+    switch (user.role) {
+      case "admin":
+        return "/dashboard/admin";
+      case "teacher":
+      case "interviewer": // المختبر يتوجه الآن لنفس لوحة تحكم المعلم
+        return "/dashboard/teacher";
+      case "student":
+        return "/dashboard/student";
+      default:
+        return "/";
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -41,7 +52,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-tarteel-maroon text-white shadow-md">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         {/* الشعار */}
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3 cursor-pointer">
           <img
             src={logoImg}
             alt="Tarteel E-Maqraa Logo"
@@ -54,17 +65,18 @@ export function Navbar() {
 
         {/* روابط التنقل - سطح المكتب */}
         <nav className="hidden md:flex items-center gap-8 font-medium">
-          <Link href="/" className="hover:text-tarteel-gold transition-colors">
+          <Link href="/" className="hover:text-tarteel-gold transition-colors cursor-pointer">
             {t("home")}
           </Link>
-          <Link href="/institute" className="hover:text-tarteel-gold transition-colors">
+          <Link href="/institute" className="hover:text-tarteel-gold transition-colors cursor-pointer">
             {t("institute")}
           </Link>
+
           {/* إظهار زر تسجيل الدخول أو رابط لوحة التحكم */}
           {!isAuthenticated ? (
             <Link
               href="/register"
-              className="bg-[#E07B39] hover:bg-[#E07B39]/90 text-white px-5 py-2 rounded-full font-bold transition-colors"
+              className="bg-[#E07B39] hover:bg-[#E07B39]/90 text-white px-5 py-2 rounded-full font-bold transition-colors cursor-pointer"
             >
               {t("login")}
             </Link>
@@ -72,7 +84,7 @@ export function Navbar() {
             <div className="flex items-center gap-4">
               <Link
                 href={dashboardPath}
-                className="flex items-center gap-2 hover:text-tarteel-gold transition-colors"
+                className="flex items-center gap-2 hover:text-tarteel-gold transition-colors cursor-pointer"
               >
                 <LayoutDashboard size={18} />
                 {t("dashboard")}
@@ -90,9 +102,8 @@ export function Navbar() {
           )}
         </nav>
 
-        {/* الأزرار اليمنى */}
+        {/* الأزرار اليمنى (مبدل اللغة وقائمة الجوال) */}
         <div className="flex items-center gap-1">
-          {/* مبدّل اللغة — مرئي دائماً */}
           <Globe size={16} className="text-white/60 mr-1" />
           {LANGUAGES.map(({ code, label }) => (
             <button
@@ -112,7 +123,7 @@ export function Navbar() {
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
                   <Menu className="h-6 w-6" />
                 </Button>
               </DropdownMenuTrigger>
@@ -131,13 +142,18 @@ export function Navbar() {
                   <>
                     <DropdownMenuItem asChild>
                       <Link href={dashboardPath}>
-                        <LayoutDashboard size={16} className="mr-2" />
-                        {t("dashboard")}
+                        <div className="flex items-center gap-2 w-full">
+                          <LayoutDashboard size={16} />
+                          {t("dashboard")}
+                        </div>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                      <LogOut size={16} className="mr-2" /> Logout
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                      <div className="flex items-center gap-2 w-full">
+                        <LogOut size={16} />
+                        Logout
+                      </div>
                     </DropdownMenuItem>
                   </>
                 )}

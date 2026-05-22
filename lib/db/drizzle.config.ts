@@ -1,14 +1,16 @@
 import { defineConfig } from "drizzle-kit";
-import path from "path";
 
+// ملاحظة: Drizzle Kit سيقرأ DATABASE_URL من ملف .env تلقائياً
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+  console.warn("DATABASE_URL is missing from environment variables.");
 }
 
 export default defineConfig({
-  schema: path.join(__dirname, "./src/schema/index.ts"),
+  schema: "./src/schema/index.ts", 
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL || "",
   },
+  verbose: true,
+  strict: true,
 });

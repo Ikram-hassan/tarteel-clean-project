@@ -43,8 +43,8 @@
   --color-tarteel-maroon: hsl(var(--tarteel-maroon));
   --color-tarteel-gold: hsl(var(--tarteel-gold));
 
-  --font-sans: 'Geist', 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
+  --font-sans: "Geist", "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
   --font-mono: var(--app-font-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -55,22 +55,22 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0, 0, 0, 0.1);
+  --badge-outline: rgba(0, 0, 0, 0.05);
   --opaque-button-border-intensity: -8;
 
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0, 0, 0, 0.03);
+  --elevate-2: rgba(0, 0, 0, 0.08);
 
   --background: 0 0% 100%;
   --foreground: 0 0% 10%;
-  
+
   --border: 0 0% 90%;
-  
+
   --card: 0 0% 100%;
   --card-foreground: 0 0% 10%;
   --card-border: 0 0% 90%;
-  
+
   --sidebar: 0 0% 98%;
   --sidebar-foreground: 0 0% 10%;
   --sidebar-border: 0 0% 90%;
@@ -104,7 +104,7 @@
 
   --input: 0 0% 90%;
   --ring: 0 60.9% 26.1%;
-  
+
   --tarteel-orange: 23.7 72.9% 55.1%;
   --tarteel-maroon: 0 60.9% 26.1%;
   --tarteel-gold: 44.2 55.1% 54.3%;

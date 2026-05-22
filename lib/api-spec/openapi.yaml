@@ -1,36 +1,260 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Tarteel E-Maqraa Platform
+
 servers:
   - url: /api
     description: Base API path
+
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication & Registration
+  - name: admin
+    description: Admin management
+  - name: students
+    description: Student management
+  - name: teachers
+    description: Teacher & Interviewer management
+  - name: sessions
+    description: Educational sessions & Classes
+
 paths:
+  # --- فحص حالة السيرفر ---
+  /:
+    get:
+      summary: Root check
+      responses:
+        "200":
+          description: Server is running
+
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
+
+  # --- مسارات الهوية (Auth) ---
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: تسجيل الدخول باستخدام معرف المستخدم (UID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, description: "Firebase UID" }
+      responses:
+        "200":
+          description: تم العثور على المستخدم وتحديد دوره
+        "404":
+          description: المستخدم غير موجود
+
+  /auth/register/student:
+    post:
+      operationId: registerStudent
+      tags: [auth]
+      summary: تسجيل طالب جديد
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterStudentInput"
+      responses:
+        "201":
+          description: تم تسجيل الطالب بنجاح
+
+  /auth/register/teacher:
+    post:
+      operationId: registerTeacher
+      tags: [auth]
+      summary: تسجيل معلم أو محاور باستخدام كود التحقق
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterTeacherInput"
+      responses:
+        "201":
+          description: تم تسجيل المعلم بنجاح
+
+  /auth/register/admin:
+    post:
+      operationId: registerAdmin
+      tags: [auth]
+      summary: تسجيل مدير جديد باستخدام كود التحقق
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterAdminInput"
+      responses:
+        "201":
+          description: تم تسجيل المدير بنجاح
+
+  # --- مسارات الجلسات (Sessions) ---
+  /sessions/token:
+    post:
+      operationId: getSessionToken
+      tags: [sessions]
+      summary: توليد رمز LiveKit للانضمام إلى غرفة صوتية
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomName, participantName]
+              properties:
+                roomName:
+                  type: string
+                  description: "اسم الغرفة (مثل: class_a, sec_1)"
+                participantName:
+                  type: string
+                  description: "اسم المشارك"
+                participantId:
+                  type: string
+                  description: "معرف المشارك (اختياري)"
+      responses:
+        "200":
+          description: تم توليد الرمز بنجاح
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: "رمز JWT للوصول"
+                  roomName:
+                    type: string
+                  url:
+                    type: string
+                    description: "رابط خادم LiveKit"
+        "400":
+          description: بيانات مفقودة
+        "500":
+          description: خطأ في توليد الرمز
+
+  # --- مسارات الإدارة (Admin) ---
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: لوحة تحكم المدير
+      parameters:
+        - in: header
+          name: x-user-role
+          required: true
+          schema:
+            type: string
+            enum: [admin]
+      responses:
+        "200":
+          description: Welcome to Admin Dashboard
+        "403":
+          description: Forbidden - Access Denied
+
+  # --- مسارات الجلسات (Sessions) ---
+  /sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: إنشاء جلسة تعليمية جديدة
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, startTime]
+              properties:
+                title: { type: string, description: "عنوان الجلسة" }
+                startTime: { type: string, format: date-time }
+                teacherId: { type: string }
+      responses:
+        "201":
+          description: تم إنشاء الجلسة بنجاح
+
 components:
   schemas:
-    HealthStatus:
+    # --- مدخلات التسجيل ---
+    RegisterStudentInput:
+      type: object
+      required: [id, name, email]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        age: { type: integer, nullable: true }
+        gender: { type: string, enum: [male, female], default: "male" }
+        language: { type: string, default: "ar" }
+        selectedDays: { type: array, items: { type: string } }
+        selectedSections: { type: array, items: { type: string } }
+        monthlyFee: { type: string, default: "0" }
+
+    RegisterTeacherInput:
+      type: object
+      required: [id, name, email, verificationCode, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        gender: { type: string, default: "male" }
+        role: { type: string, enum: [teacher, interviewer] }
+        verificationCode: { type: string }
+        selectedDays: { type: array, items: { type: string } }
+        selectedSections: { type: array, items: { type: string } }
+        teacherType:
+          { type: string, enum: [beginner, intermediate, meton, ijaza] }
+        juzRange: { type: integer, nullable: true }
+        qiraatSpecialization: { type: string, nullable: true }
+        interviewerType:
+          { type: string, enum: [placement, hifz, ijaza], nullable: true }
+
+    RegisterAdminInput:
+      type: object
+      required: [id, name, email, verificationCode]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        verificationCode: { type: string }
+        language: { type: string, default: "ar" }
+
+    # --- مخرجات البيانات (Models) ---
+    Student:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, example: "student" }
+        paymentStatus: { type: string }
+        createdAt: { type: string, format: date-time }
 
+    Teacher:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
+        isVerified: { type: boolean }
+        workingDays: { type: array, items: { type: string } }
