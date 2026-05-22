@@ -31,8 +31,9 @@ interface Room {
 interface WaitingStudent {
   id: string;
   name: string;
-  level: string;
-  waitTime: number;
+  studentLevel: string;
+  waitTime?: number;
+  createdAt?: string;
 }
 
 interface LiveClassroomHubUnifiedProps {
@@ -42,6 +43,8 @@ interface LiveClassroomHubUnifiedProps {
   onJoinRoom?: (roomId: string) => void;
   onLeaveRoom?: () => void;
 }
+
+const API_BASE_URL = "https://tarteel-monorepo-api-server-v6ry.vercel.app";
 
 export function LiveClassroomHubUnified({
   userRole,
@@ -129,18 +132,70 @@ export function LiveClassroomHubUnified({
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
 
   // Interviewer-specific state
-  const [waitingStudents, setWaitingStudents] = useState<WaitingStudent[]>([
-    { id: "1", name: "Ahmed Ali", level: "New", waitTime: 5 },
-    { id: "2", name: "Fatima Hassan", level: "Intermediate", waitTime: 12 },
-    { id: "3", name: "Omar Mohamed", level: "New", waitTime: 3 },
-  ]);
+  const [waitingStudents, setWaitingStudents] = useState<WaitingStudent[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
     new Set(),
   );
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 
   const isInterviewer = userRole === "interviewer";
   const isPlacementInterviewer = interviewerType === "placement";
+
+  // Fetch waiting students from API with 10-second polling
+  useEffect(() => {
+    if (!isInterviewer) return;
+
+    const fetchWaitingStudents = async () => {
+      try {
+        setIsLoadingStudents(true);
+        const response = await fetch(
+          `${API_BASE_URL}/api/matching/waiting-students`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch waiting students");
+        }
+
+        const data = await response.json();
+
+        // Map API response to component format
+        const mappedStudents: WaitingStudent[] = data.waitingStudents.map(
+          (student: any) => {
+            // Calculate wait time in minutes
+            const waitTime = student.createdAt
+              ? Math.floor(
+                  (Date.now() - new Date(student.createdAt).getTime()) / 60000,
+                )
+              : 0;
+
+            return {
+              id: student.id,
+              name: student.name,
+              studentLevel: student.studentLevel || "New",
+              waitTime,
+              createdAt: student.createdAt,
+            };
+          },
+        );
+
+        setWaitingStudents(mappedStudents);
+      } catch (error) {
+        console.error("Error fetching waiting students:", error);
+      } finally {
+        setIsLoadingStudents(false);
+      }
+    };
+
+    // Initial fetch
+    fetchWaitingStudents();
+
+    // Set up 10-second polling interval
+    const intervalId = setInterval(fetchWaitingStudents, 10000);
+
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
+  }, [isInterviewer]);
 
   const handleJoinRoom = (roomId: string) => {
     setCurrentRoom(roomId);
@@ -255,41 +310,55 @@ export function LiveClassroomHubUnified({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
-            <div className="space-y-2">
-              {waitingStudents.map((student) => (
-                <div
-                  key={student.id}
-                  onClick={() => toggleStudentSelection(student.id)}
-                  className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedStudents.has(student.id)
-                      ? "border-tarteel-gold bg-tarteel-gold/10"
-                      : "border-gray-200 hover:border-tarteel-maroon"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                        selectedStudents.has(student.id)
-                          ? "bg-tarteel-gold text-white"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
-                    >
-                      {student.name.charAt(0)}
+            {isLoadingStudents && waitingStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tarteel-maroon mx-auto mb-2"></div>
+                <p className="text-sm">Loading waiting students...</p>
+              </div>
+            ) : waitingStudents.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No students waiting</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {waitingStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    onClick={() => toggleStudentSelection(student.id)}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedStudents.has(student.id)
+                        ? "border-tarteel-gold bg-tarteel-gold/10"
+                        : "border-gray-200 hover:border-tarteel-maroon"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                          selectedStudents.has(student.id)
+                            ? "bg-tarteel-gold text-white"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {student.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{student.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {student.studentLevel}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">{student.name}</p>
-                      <p className="text-xs text-gray-500">{student.level}</p>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        {student.waitTime || 0}m
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {student.waitTime}m
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <Button
               onClick={handleStartTest}

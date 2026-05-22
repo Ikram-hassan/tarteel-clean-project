@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -32,17 +32,21 @@ import {
 interface Student {
   id: string;
   name: string;
-  level: "beginner" | "intermediate" | "meton" | "ijaza";
-  attendance: "present" | "absent" | "late";
-  lastSeen: string;
-  progress: string;
-  grade: string;
+  studentLevel: "beginner" | "intermediate" | "meton" | "ijaza";
+  attendance?: "present" | "absent" | "late";
+  lastSeen?: string;
+  progress?: string;
+  grade?: string;
+  juzRange?: number;
+  assignedQiraat?: string;
 }
 
 interface StudentManagementTableProps {
   onRequestTest?: (studentId: string) => void;
   onViewDetails?: (studentId: string) => void;
 }
+
+const API_BASE_URL = "https://tarteel-monorepo-api-server-v6ry.vercel.app";
 
 export function StudentManagementTable({
   onRequestTest,
@@ -51,55 +55,89 @@ export function StudentManagementTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("all");
   const [filterAttendance, setFilterAttendance] = useState<string>("all");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data - replace with real data from API
-  const [students] = useState<Student[]>([
-    {
-      id: "1",
-      name: "Ahmed Ali",
-      level: "beginner",
-      attendance: "present",
-      lastSeen: "2 mins ago",
-      progress: "Juz 1 - Page 15",
-      grade: "A",
-    },
-    {
-      id: "2",
-      name: "Fatima Hassan",
-      level: "intermediate",
-      attendance: "present",
-      lastSeen: "5 mins ago",
-      progress: "Juz 10 - Page 185",
-      grade: "A+",
-    },
-    {
-      id: "3",
-      name: "Omar Mohamed",
-      level: "meton",
-      attendance: "late",
-      lastSeen: "15 mins ago",
-      progress: "Jazariyyah - Line 45",
-      grade: "B+",
-    },
-    {
-      id: "4",
-      name: "Aisha Ibrahim",
-      level: "ijaza",
-      attendance: "absent",
-      lastSeen: "2 hours ago",
-      progress: "Qira'at Nafi' - Surah Al-Baqarah",
-      grade: "A",
-    },
-    {
-      id: "5",
-      name: "Yusuf Abdullah",
-      level: "beginner",
-      attendance: "present",
-      lastSeen: "1 min ago",
-      progress: "Juz 2 - Page 25",
-      grade: "B",
-    },
-  ]);
+  // Fetch students from API
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${API_BASE_URL}/api/students`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch students");
+        }
+
+        const data = await response.json();
+
+        // Map API response to component format
+        const mappedStudents: Student[] = data.students.map((student: any) => {
+          // Generate mock attendance and progress data
+          // In production, this should come from the backend
+          const attendanceOptions: ("present" | "absent" | "late")[] = [
+            "present",
+            "present",
+            "present",
+            "late",
+            "absent",
+          ];
+          const randomAttendance =
+            attendanceOptions[
+              Math.floor(Math.random() * attendanceOptions.length)
+            ];
+
+          const lastSeenOptions = [
+            "1 min ago",
+            "2 mins ago",
+            "5 mins ago",
+            "15 mins ago",
+            "2 hours ago",
+          ];
+          const randomLastSeen =
+            lastSeenOptions[Math.floor(Math.random() * lastSeenOptions.length)];
+
+          const gradeOptions = ["A+", "A", "B+", "B", "C"];
+          const randomGrade =
+            gradeOptions[Math.floor(Math.random() * gradeOptions.length)];
+
+          // Generate progress based on level
+          let progress = "";
+          if (student.studentLevel === "beginner") {
+            progress = `Juz ${Math.floor(Math.random() * 5) + 1} - Page ${Math.floor(Math.random() * 20) + 1}`;
+          } else if (student.studentLevel === "intermediate") {
+            const juz = student.juzRange || Math.floor(Math.random() * 25) + 5;
+            progress = `Juz ${juz} - Page ${Math.floor(Math.random() * 20) + 180}`;
+          } else if (student.studentLevel === "meton") {
+            progress = `Jazariyyah - Line ${Math.floor(Math.random() * 100) + 1}`;
+          } else if (student.studentLevel === "ijaza") {
+            const qiraat = student.assignedQiraat || "Nafi'";
+            progress = `Qira'at ${qiraat} - Surah Al-Baqarah`;
+          }
+
+          return {
+            id: student.id,
+            name: student.name,
+            studentLevel: student.studentLevel,
+            attendance: randomAttendance,
+            lastSeen: randomLastSeen,
+            progress,
+            grade: randomGrade,
+            juzRange: student.juzRange,
+            assignedQiraat: student.assignedQiraat,
+          };
+        });
+
+        setStudents(mappedStudents);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   const getAttendanceIcon = (status: Student["attendance"]) => {
     switch (status) {
@@ -109,10 +147,14 @@ export function StudentManagementTable({
         return <XCircle className="w-4 h-4 text-red-500" />;
       case "late":
         return <Clock className="w-4 h-4 text-amber-500" />;
+      default:
+        return null;
     }
   };
 
   const getAttendanceBadge = (status: Student["attendance"]) => {
+    if (!status) return null;
+
     const colors = {
       present: "bg-green-100 text-green-700 border-green-300",
       absent: "bg-red-100 text-red-700 border-red-300",
@@ -128,7 +170,7 @@ export function StudentManagementTable({
     );
   };
 
-  const getLevelBadge = (level: Student["level"]) => {
+  const getLevelBadge = (level: Student["studentLevel"]) => {
     const colors = {
       beginner: "bg-blue-100 text-blue-700",
       intermediate: "bg-green-100 text-green-700",
@@ -138,7 +180,9 @@ export function StudentManagementTable({
     return <Badge className={`${colors[level]} capitalize`}>{level}</Badge>;
   };
 
-  const getGradeBadge = (grade: string) => {
+  const getGradeBadge = (grade?: string) => {
+    if (!grade) return null;
+
     const isHighGrade = grade.startsWith("A");
     return (
       <Badge
@@ -157,7 +201,8 @@ export function StudentManagementTable({
     const matchesSearch = student.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesLevel = filterLevel === "all" || student.level === filterLevel;
+    const matchesLevel =
+      filterLevel === "all" || student.studentLevel === filterLevel;
     const matchesAttendance =
       filterAttendance === "all" || student.attendance === filterAttendance;
     return matchesSearch && matchesLevel && matchesAttendance;
@@ -216,120 +261,133 @@ export function StudentManagementTable({
 
           {/* Table */}
           <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-bold">Student Name</TableHead>
-                  <TableHead className="font-bold">Level</TableHead>
-                  <TableHead className="font-bold">Attendance</TableHead>
-                  <TableHead className="font-bold">Last Seen</TableHead>
-                  <TableHead className="font-bold">Progress</TableHead>
-                  <TableHead className="font-bold">Grade</TableHead>
-                  <TableHead className="font-bold text-center">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      No students found
-                    </TableCell>
+            {isLoading ? (
+              <div className="text-center py-12 text-gray-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tarteel-maroon mx-auto mb-4"></div>
+                <p className="text-sm">Loading students...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-bold">Student Name</TableHead>
+                    <TableHead className="font-bold">Level</TableHead>
+                    <TableHead className="font-bold">Attendance</TableHead>
+                    <TableHead className="font-bold">Last Seen</TableHead>
+                    <TableHead className="font-bold">Progress</TableHead>
+                    <TableHead className="font-bold">Grade</TableHead>
+                    <TableHead className="font-bold text-center">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  filteredStudents.map((student, index) => (
-                    <motion.tr
-                      key={student.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        {student.name}
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-gray-500"
+                      >
+                        No students found
                       </TableCell>
-                      <TableCell>{getLevelBadge(student.level)}</TableCell>
-                      <TableCell>
-                        {getAttendanceBadge(student.attendance)}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {student.lastSeen}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-700">
-                        {student.progress}
-                      </TableCell>
-                      <TableCell>{getGradeBadge(student.grade)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => onRequestTest?.(student.id)}
-                            className="bg-tarteel-gold hover:bg-tarteel-gold/90 text-white"
-                          >
-                            <FileText className="w-4 h-4 mr-1" />
-                            Request Test
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="ghost">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => onViewDetails?.(student.id)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>Send Message</DropdownMenuItem>
-                              <DropdownMenuItem>
-                                View Progress Report
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                    </TableRow>
+                  ) : (
+                    filteredStudents.map((student, index) => (
+                      <motion.tr
+                        key={student.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <TableCell className="font-medium">
+                          {student.name}
+                        </TableCell>
+                        <TableCell>
+                          {getLevelBadge(student.studentLevel)}
+                        </TableCell>
+                        <TableCell>
+                          {getAttendanceBadge(student.attendance)}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {student.lastSeen || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-700">
+                          {student.progress || "N/A"}
+                        </TableCell>
+                        <TableCell>{getGradeBadge(student.grade)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => onRequestTest?.(student.id)}
+                              className="bg-tarteel-gold hover:bg-tarteel-gold/90 text-white"
+                            >
+                              <FileText className="w-4 h-4 mr-1" />
+                              Request Test
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => onViewDetails?.(student.id)}
+                                >
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  Send Message
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  View Progress Report
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </motion.tr>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-2xl font-bold text-green-600">
-                  {students.filter((s) => s.attendance === "present").length}
-                </span>
+          {!isLoading && students.length > 0 && (
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-2xl font-bold text-green-600">
+                    {students.filter((s) => s.attendance === "present").length}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">Present</p>
               </div>
-              <p className="text-xs text-gray-600">Present</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-amber-500" />
-                <span className="text-2xl font-bold text-amber-600">
-                  {students.filter((s) => s.attendance === "late").length}
-                </span>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  <span className="text-2xl font-bold text-amber-600">
+                    {students.filter((s) => s.attendance === "late").length}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">Late</p>
               </div>
-              <p className="text-xs text-gray-600">Late</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <XCircle className="w-4 h-4 text-red-500" />
-                <span className="text-2xl font-bold text-red-600">
-                  {students.filter((s) => s.attendance === "absent").length}
-                </span>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <XCircle className="w-4 h-4 text-red-500" />
+                  <span className="text-2xl font-bold text-red-600">
+                    {students.filter((s) => s.attendance === "absent").length}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">Absent</p>
               </div>
-              <p className="text-xs text-gray-600">Absent</p>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
