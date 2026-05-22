@@ -64,11 +64,11 @@ export default function TeacherDashboard() {
       try {
         setLoading(true);
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/students`,
+          "https://tarteel-monorepo-api-server-v6ry.vercel.app/api/students",
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch students");
+          throw new Error("HTTP error " + response.status);
         }
 
         const data = await response.json();
