@@ -17,15 +17,16 @@ const router = Router();
 router.post("/placement-assign", async (req, res): Promise<any> => {
   const {
     studentId,
-    assignedLevel,
+    studentName,
+    level,
     juzRange,
-    qiraatSpecialization,
+    assignedQiraat,
     interviewerId,
   } = req.body;
 
-  if (!studentId || !assignedLevel) {
+  if (!studentId || !level) {
     return res.status(400).json({
-      error: "Student ID and assigned level are required",
+      error: "Student ID and level are required",
     });
   }
 
@@ -47,9 +48,9 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
     await db
       .update(students)
       .set({
-        studentLevel: assignedLevel,
+        studentLevel: level,
         assignedJuzRange: juzRange || null,
-        assignedQiraat: qiraatSpecialization || null,
+        assignedQiraat: assignedQiraat || null,
         updatedAt: new Date(),
       })
       .where(eq(students.id, studentId));
@@ -61,7 +62,7 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
       .where(
         and(
           eq(teachers.role, "teacher"),
-          eq(teachers.teacherType, assignedLevel), // PRIORITY 1: Level
+          eq(teachers.teacherType, level), // PRIORITY 1: Level
           eq(teachers.gender, student.gender), // PRIORITY 2: Gender
           eq(teachers.isVerified, true),
         ),
@@ -71,11 +72,11 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
       return res.status(404).json({
         error: "No matching teachers found for placement criteria",
         criteria: {
-          level: assignedLevel,
+          level: level,
           gender: student.gender,
           language: student.language,
           juzRange,
-          qiraatSpecialization,
+          assignedQiraat,
         },
       });
     }
@@ -112,7 +113,7 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
         }
 
         // Additional validation for intermediate (Juz range)
-        if (assignedLevel === "intermediate" && juzRange) {
+        if (level === "intermediate" && juzRange) {
           const teacherJuz = teacher.juzRange || 30;
           if (juzRange > teacherJuz) {
             score -= 50; // Penalty if teacher can't handle the Juz range
@@ -120,8 +121,8 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
         }
 
         // Additional validation for ijaza (Qira'at match)
-        if (assignedLevel === "ijaza" && qiraatSpecialization) {
-          if (teacher.qiraatSpecialization === qiraatSpecialization) {
+        if (level === "ijaza" && assignedQiraat) {
+          if (teacher.qiraatSpecialization === assignedQiraat) {
             score += 50; // Bonus for exact Qira'at match
           } else {
             score -= 50; // Penalty for mismatch
@@ -185,9 +186,9 @@ router.post("/placement-assign", async (req, res): Promise<any> => {
       placement: {
         studentId: student.id,
         studentName: student.name,
-        assignedLevel,
+        assignedLevel: level,
         juzRange,
-        qiraatSpecialization,
+        assignedQiraat,
         teacherId: assignedTeacher.id,
         teacherName: assignedTeacher.name,
         matchScore: bestMatch.score,
