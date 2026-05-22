@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { RefreshCw, Loader2 } from "lucide-react";
 
+const API_BASE_URL = "https://tarteel-monorepo-api-server-v6ry.vercel.app";
+
 /**
  * UNIFIED 4-SECTION DASHBOARD
  * Implements the Architect's Override with Maroon (#800000) & Gold (#D4AF37) luxury theme
@@ -39,11 +41,48 @@ export default function UnifiedDashboard() {
   );
   const [isShiftSwitching, setIsShiftSwitching] = useState(false);
 
+  // Sessions State
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       setLocation("/register");
     }
   }, [isAuthenticated, isLoading, setLocation]);
+
+  // Fetch sessions based on user role
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!user?.id || !user?.role) return;
+
+      setIsLoadingSessions(true);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/sessions?userId=${user.id}&userRole=${user.role}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setSessions(data.sessions || []);
+        } else {
+          console.error("Failed to fetch sessions:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error fetching sessions:", error);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+
+    fetchSessions();
+  }, [user?.id, user?.role]);
 
   // Handle Shift Toggle
   const handleShiftToggle = async () => {

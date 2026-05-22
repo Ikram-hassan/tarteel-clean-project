@@ -548,4 +548,43 @@ router.post("/reassign-student", async (req, res): Promise<any> => {
   }
 });
 
+/**
+ * Get waiting students (students with level === null)
+ * These are new students waiting for placement interview
+ */
+router.get("/waiting-students", async (req, res): Promise<any> => {
+  try {
+    // Fetch students where level is null (waiting for interview)
+    const waitingStudents = await db
+      .select()
+      .from(students)
+      .where(sql`${students.level} IS NULL`)
+      .orderBy(students.createdAt);
+
+    return res.status(200).json({
+      success: true,
+      waitingStudents: waitingStudents.map((student) => ({
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone,
+        age: student.age,
+        gender: student.gender,
+        language: student.language,
+        studentLevel: student.studentLevel || "New",
+        createdAt: student.createdAt,
+        selectedDays: student.selectedDays,
+        selectedSections: student.selectedSections,
+      })),
+      total: waitingStudents.length,
+    });
+  } catch (error: any) {
+    console.error("Error fetching waiting students:", error);
+    return res.status(500).json({
+      error: "Failed to fetch waiting students",
+      details: error.message,
+    });
+  }
+});
+
 export default router;

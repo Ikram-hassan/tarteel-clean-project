@@ -1,10 +1,72 @@
 import { Router } from "express";
 import * as LiveKit from "livekit-server-sdk";
 import { db } from "@workspace/db";
-import { students, teachers } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { students, teachers, sessions } from "@workspace/db/schema";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
+
+/**
+ * GET /api/sessions
+ * Fetch sessions based on user role
+ * - Teachers: hostType === 'teacher' AND sessionCategory === 'regular_class'
+ * - Interviewers: hostType === 'interviewer' AND sessionCategory === 'placement_test'
+ */
+router.get("/", async (req, res): Promise<any> => {
+  const { userId, userRole } = req.query;
+
+  if (!userId || !userRole) {
+    return res.status(400).json({
+      error: "userId and userRole are required",
+    });
+  }
+
+  try {
+    let userSessions;
+
+    if (userRole === "teacher") {
+      // Fetch only regular class sessions for teachers
+      userSessions = await db
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.teacherId, userId as string),
+            eq(sessions.hostType, "teacher"),
+            eq(sessions.sessionCategory, "regular_class"),
+          ),
+        );
+    } else if (userRole === "interviewer") {
+      // Fetch only placement test sessions for interviewers
+      userSessions = await db
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.teacherId, userId as string),
+            eq(sessions.hostType, "interviewer"),
+            eq(sessions.sessionCategory, "placement_test"),
+          ),
+        );
+    } else {
+      return res.status(400).json({
+        error: "Invalid userRole. Must be 'teacher' or 'interviewer'",
+      });
+    }
+
+    return res.json({
+      success: true,
+      sessions: userSessions,
+      count: userSessions.length,
+    });
+  } catch (error) {
+    console.error("Fetch sessions error:", error);
+    return res.status(500).json({
+      error: "Failed to fetch sessions",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
 
 /**
  * POST /api/sessions/token
@@ -107,6 +169,108 @@ router.post("/token", async (req, res): Promise<any> => {
     console.error("Token generation error:", error);
     return res.status(500).json({
       error: "Failed to generate token",
+      details: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * POST /api/sessions/create
+ * Create a new session
+ * - Automatically sets hostType and sessionCategory based on context
+ * - For testRequest-based sessions: hostType='interviewer', sessionCategory='placement_test'
+ * - For regular sessions: hostType='teacher', sessionCategory='regular_class'
+ */
+router.post("/create", async (req, res): Promise<any> => {
+  const {
+    teacherId,
+    sectionId,
+    sessionNumber,
+    startTime,
+    endTime,
+    isFromTestRequest,
+    testRequestId,
+  } = req.body;
+
+  if (!teacherId || !sectionId || !sessionNumber || !startTime || !endTime) {
+    return res.status(400).json({
+      error:
+        "teacherId, sectionId, sessionNumber, startTime, and endTime are required",
+    });
+  }
+
+  try {
+    // Verify teacher exists
+    const [teacher] = await db
+      .select()
+      .from(teachers)
+      .where(eq(teachers.id, teacherId))
+      .limit(1);
+
+    if (!teacher) {
+      return res.status(404).json({
+        error: "Teacher not found",
+      });
+    }
+
+    // Determine hostType and sessionCategory
+    let hostType: "teacher" | "interviewer" = "teacher";
+    let sessionCategory: "regular_class" | "placement_test" = "regular_class";
+
+    if (isFromTestRequest === true) {
+      // Session created from testRequest - set as interviewer/placement_test
+      hostType = "interviewer";
+      sessionCategory = "placement_test";
+    } else if (teacher.role === "interviewer") {
+      // Teacher is actually an interviewer
+      hostType = "interviewer";
+      sessionCategory = "placement_test";
+    }
+
+    // Generate session ID
+    const sessionId = `session_${teacherId}_${Date.now()}`;
+
+    // Create session
+    const newSession = await db
+      .insert(sessions)
+      .values({
+        id: sessionId,
+        teacherId,
+        sectionId,
+        sessionNumber,
+        hostType,
+        sessionCategory,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        status: "scheduled",
+        isAudioOnly: true,
+        canShareScreen: false,
+        attendance: [],
+        adminMetrics: {
+          isTeacherLate: false,
+          teacherTotalActiveMinutes: 0,
+          systemCalculatedStatus: "pending",
+          incidentReports: [],
+          sessionCategory,
+        },
+      })
+      .returning();
+
+    return res.status(201).json({
+      success: true,
+      message: "Session created successfully",
+      session: newSession[0],
+      metadata: {
+        hostType,
+        sessionCategory,
+        isFromTestRequest: isFromTestRequest || false,
+        testRequestId: testRequestId || null,
+      },
+    });
+  } catch (error) {
+    console.error("Session creation error:", error);
+    return res.status(500).json({
+      error: "Failed to create session",
       details: error instanceof Error ? error.message : "Unknown error",
     });
   }
