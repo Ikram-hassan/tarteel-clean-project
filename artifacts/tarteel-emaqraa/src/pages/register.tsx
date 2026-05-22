@@ -267,17 +267,27 @@ export default function Register() {
       if (role === "teacher") {
         // CRITICAL: Ensure verificationCode is NOT deleted
         registrationData.teacherType = teacherType;
+
+        if (teacherType === "beginner") {
+          registrationData.levelsToTeach = ["beginner"];
+        }
         if (teacherType === "intermediate") {
           registrationData.juzRange = Number(juzRange);
+          registrationData.levelsToTeach = [Number(juzRange).toString()];
         }
         if (teacherType === "ijaza") {
           registrationData.qiraatSpecialization = qiraatSpecialization;
+          registrationData.levelsToTeach = [qiraatSpecialization];
+        }
+        if (teacherType === "meton") {
+          registrationData.levelsToTeach = ["meton"];
         }
       }
 
       if (role === "interviewer") {
         // CRITICAL: Ensure verificationCode is NOT deleted
         registrationData.interviewerType = interviewerType;
+        registrationData.levelsToTeach = [];
       }
 
       console.log("[Register] Submitting payload:", registrationData);

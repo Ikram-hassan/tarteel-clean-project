@@ -305,7 +305,7 @@ function LiveClassContent({
         {
           level: "beginner" | "intermediate" | "meton" | "ijaza" | null;
           juzRange?: number;
-          advancedType?: "meton" | "ijaza";
+          assignedQiraat?: string;
         }
       >
     >({});
@@ -329,14 +329,11 @@ function LiveClassContent({
       }));
     };
 
-    // Handle advanced type selection (meton/ijaza)
-    const handleAdvancedSelection = (
-      studentId: string,
-      advancedType: "meton" | "ijaza",
-    ) => {
+    // Handle Qira'at selection for ijaza
+    const handleQiraatSelection = (studentId: string, qiraat: string) => {
       setStudentDecisions((prev) => ({
         ...prev,
-        [studentId]: { ...prev[studentId], advancedType },
+        [studentId]: { ...prev[studentId], assignedQiraat: qiraat },
       }));
     };
 
@@ -357,12 +354,9 @@ function LiveClassContent({
         return;
       }
 
-      // Validate meton/ijaza requires type selection
-      if (
-        (decision.level === "meton" || decision.level === "ijaza") &&
-        !decision.advancedType
-      ) {
-        alert("Please select Meton or Ijaza for Advanced level");
+      // Validate ijaza requires Qira'at selection
+      if (decision.level === "ijaza" && !decision.assignedQiraat) {
+        alert("Please select a Qira'at for Ijaza level");
         return;
       }
 
@@ -381,9 +375,14 @@ function LiveClassContent({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               studentId,
-              assignedLevel: decision.level,
-              juzRange: decision.juzRange,
-              qiraatSpecialization: decision.advancedType,
+              studentName,
+              level: decision.level,
+              juzRange:
+                decision.level === "intermediate"
+                  ? Number(decision.juzRange)
+                  : null,
+              assignedQiraat:
+                decision.level === "ijaza" ? decision.assignedQiraat : null,
               interviewerId: user?.id,
             }),
           },
@@ -393,7 +392,7 @@ function LiveClassContent({
 
         if (response.ok) {
           alert(
-            `✅ SUCCESS!\n\nStudent: ${studentName}\nLevel: ${decision.level}${decision.juzRange ? ` (Juz ${decision.juzRange})` : ""}\nAssigned Teacher: ${data.placement.teacherName}\nMatch Score: ${data.placement.matchScore}/200`,
+            `✅ SUCCESS!\n\nStudent: ${studentName}\nLevel: ${decision.level}${decision.juzRange ? ` (Juz ${decision.juzRange})` : ""}${decision.assignedQiraat ? ` (Qira'at: ${decision.assignedQiraat})` : ""}\nAssigned Teacher: ${data.placement.teacherName}\nMatch Score: ${data.placement.matchScore}/200`,
           );
 
           // Clear decision for this student
@@ -586,6 +585,34 @@ function LiveClassContent({
                         >
                           Ijaza
                         </button>
+                        {studentDecisions[participant.identity]?.level ===
+                          "ijaza" && (
+                          <select
+                            onChange={(e) =>
+                              handleQiraatSelection(
+                                participant.identity,
+                                e.target.value,
+                              )
+                            }
+                            value={
+                              studentDecisions[participant.identity]
+                                ?.assignedQiraat || ""
+                            }
+                            className="text-[8px] font-bold px-1 py-1 rounded bg-amber-700 text-white w-full"
+                          >
+                            <option value="">Select Qira'at</option>
+                            <option value="nafi">Nafi'</option>
+                            <option value="ibn_kathir">Ibn Kathir</option>
+                            <option value="abu_amr">Abu Amr</option>
+                            <option value="ibn_amir">Ibn Amir</option>
+                            <option value="asim">Asim</option>
+                            <option value="hamzah">Hamzah</option>
+                            <option value="al_kisai">Al-Kisa'i</option>
+                            <option value="abu_jafar">Abu Ja'far</option>
+                            <option value="yaqub">Yaqub</option>
+                            <option value="khalaf">Khalaf al-Aishir</option>
+                          </select>
+                        )}
                         {studentDecisions[participant.identity]?.level && (
                           <button
                             onClick={() =>
