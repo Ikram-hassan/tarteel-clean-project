@@ -71,6 +71,9 @@ export function StudentManagementTable({
 
         const data = await response.json();
 
+        // Log the fetched data to console
+        console.log("Fetched students data:", data);
+
         // Map API response to component format
         const mappedStudents: Student[] = data.students.map((student: any) => {
           // Generate mock attendance and progress data
