@@ -33,8 +33,11 @@ export default defineConfig({
   root: __dirname,
 
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    // 🚀 تم التعديل هنا ليصبح المخرجات في dist مباشرة ليتوافق مع Vercel
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
+    // 🚀 إيقاف الـ sourcemap لتخطي تحذيرات البناء وسرعة التجميع
+    sourcemap: false,
   },
 
   server: {
