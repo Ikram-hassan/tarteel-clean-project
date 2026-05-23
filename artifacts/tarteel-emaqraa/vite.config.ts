@@ -47,6 +47,14 @@ export default defineConfig({
   server: {
     port,
     host: "0.0.0.0",
+    // ✅ إضافة الـ proxy لحل مشاكل الاتصال بالسيرفر
+    proxy: {
+      "/api": {
+        target: "https://tarteel-monorepo-api-server-v6ry.vercel.app",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
   preview: {

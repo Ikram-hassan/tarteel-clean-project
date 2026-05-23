@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Clock,
@@ -46,8 +45,6 @@ interface StudentManagementTableProps {
   onViewDetails?: (studentId: string) => void;
 }
 
-const API_BASE_URL = "https://tarteel-monorepo-api-server-v6ry.vercel.app";
-
 export function StudentManagementTable({
   onRequestTest,
   onViewDetails,
@@ -58,14 +55,13 @@ export function StudentManagementTable({
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch students from API
+  // Fetch students from API using proxy
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(
-          "https://tarteel-monorepo-api-server-v6ry.vercel.app/api/students",
-        );
+        // تم التعديل هنا لاستخدام المسار النسبي الذي يوجهه الـ Proxy
+        const response = await fetch("/api/students");
 
         if (!response.ok) {
           throw new Error("HTTP error " + response.status);
@@ -73,13 +69,8 @@ export function StudentManagementTable({
 
         const data = await response.json();
 
-        // Log the fetched data to console
-        console.log("Fetched students data:", data);
-
         // Map API response to component format
         const mappedStudents: Student[] = data.students.map((student: any) => {
-          // Generate mock attendance and progress data
-          // In production, this should come from the backend
           const attendanceOptions: ("present" | "absent" | "late")[] = [
             "present",
             "present",
@@ -91,7 +82,6 @@ export function StudentManagementTable({
             attendanceOptions[
               Math.floor(Math.random() * attendanceOptions.length)
             ];
-
           const lastSeenOptions = [
             "1 min ago",
             "2 mins ago",
@@ -101,12 +91,10 @@ export function StudentManagementTable({
           ];
           const randomLastSeen =
             lastSeenOptions[Math.floor(Math.random() * lastSeenOptions.length)];
-
           const gradeOptions = ["A+", "A", "B+", "B", "C"];
           const randomGrade =
             gradeOptions[Math.floor(Math.random() * gradeOptions.length)];
 
-          // Generate progress based on level
           let progress = "";
           if (student.studentLevel === "beginner") {
             progress = `Juz ${Math.floor(Math.random() * 5) + 1} - Page ${Math.floor(Math.random() * 20) + 1}`;
@@ -159,7 +147,6 @@ export function StudentManagementTable({
 
   const getAttendanceBadge = (status: Student["attendance"]) => {
     if (!status) return null;
-
     const colors = {
       present: "bg-green-100 text-green-700 border-green-300",
       absent: "bg-red-100 text-red-700 border-red-300",
@@ -187,15 +174,10 @@ export function StudentManagementTable({
 
   const getGradeBadge = (grade?: string) => {
     if (!grade) return null;
-
     const isHighGrade = grade.startsWith("A");
     return (
       <Badge
-        className={`${
-          isHighGrade
-            ? "bg-tarteel-gold text-white"
-            : "bg-gray-200 text-gray-700"
-        } font-bold`}
+        className={`${isHighGrade ? "bg-tarteel-gold text-white" : "bg-gray-200 text-gray-700"} font-bold`}
       >
         {grade}
       </Badge>
@@ -228,7 +210,6 @@ export function StudentManagementTable({
           </div>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
-          {/* Search and Filters */}
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -264,7 +245,6 @@ export function StudentManagementTable({
             </div>
           </div>
 
-          {/* Table */}
           <div className="border rounded-lg overflow-hidden">
             {isLoading ? (
               <div className="text-center py-12 text-gray-500">
@@ -328,8 +308,7 @@ export function StudentManagementTable({
                               onClick={() => onRequestTest?.(student.id)}
                               className="bg-tarteel-gold hover:bg-tarteel-gold/90 text-white"
                             >
-                              <FileText className="w-4 h-4 mr-1" />
-                              Request Test
+                              <FileText className="w-4 h-4 mr-1" /> Request Test
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -360,39 +339,6 @@ export function StudentManagementTable({
               </Table>
             )}
           </div>
-
-          {/* Summary Stats */}
-          {!isLoading && students.length > 0 && (
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-2xl font-bold text-green-600">
-                    {students.filter((s) => s.attendance === "present").length}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600">Present</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Clock className="w-4 h-4 text-amber-500" />
-                  <span className="text-2xl font-bold text-amber-600">
-                    {students.filter((s) => s.attendance === "late").length}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600">Late</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <XCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-2xl font-bold text-red-600">
-                    {students.filter((s) => s.attendance === "absent").length}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600">Absent</p>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
