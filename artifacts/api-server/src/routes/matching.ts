@@ -549,21 +549,96 @@ router.post("/reassign-student", async (req, res): Promise<any> => {
 });
 
 /**
- * Get waiting students (students with level === null)
- * These are new students waiting for placement interview
+ * Get waiting students matched to the current interviewer
+ * Matches based on:
+ * 1. is_tested must be false
+ * 2. current_active_shift must match exactly between interviewer and student
+ * 3. At least one day in students.selected_days matches interviewer's working_days (SQL intersection)
+ * 4. Only students assigned to the interviewer's shift and level
  */
 router.get("/waiting-students", async (req, res): Promise<any> => {
   try {
-    // Fetch students where level is null (waiting for interview)
+    const { interviewerId } = req.query;
+
+    if (!interviewerId) {
+      return res.status(400).json({
+        error: "Interviewer ID is required",
+      });
+    }
+
+    // 1. Get interviewer details
+    const [interviewer] = await db
+      .select()
+      .from(teachers)
+      .where(
+        and(
+          eq(teachers.id, interviewerId as string),
+          eq(teachers.role, "interviewer"),
+        ),
+      )
+      .limit(1);
+
+    if (!interviewer) {
+      return res.status(404).json({
+        error: "Interviewer not found or invalid role",
+      });
+    }
+
+    const interviewerShift = interviewer.currentActiveShift;
+    const interviewerDays = (interviewer.workingDays as string[]) || [];
+    const interviewerType = interviewer.interviewerType; // placement, hifz, or ijaza
+
+    if (!interviewerShift) {
+      return res.status(400).json({
+        error: "Interviewer has no active shift set",
+      });
+    }
+
+    // 2. Fetch students matching all criteria using SQL intersection for days
     const waitingStudents = await db
       .select()
       .from(students)
-      .where(sql`${students.level} IS NULL`)
+      .where(
+        and(
+          eq(students.isTested, false), // Criterion 1: is_tested must be false
+          eq(students.currentActiveShift, interviewerShift), // Criterion 2: exact shift match
+          sql`EXISTS (
+            SELECT 1 
+            FROM jsonb_array_elements_text(${students.selectedDays}) AS student_day
+            WHERE student_day = ANY(${interviewerDays})
+          )`, // Criterion 3: SQL intersection check for at least one matching day
+        ),
+      )
       .orderBy(students.createdAt);
+
+    // 3. Filter by interviewer level/type if applicable
+    // For placement interviewers, they handle all new students
+    // For hifz/ijaza interviewers, filter by student level
+    let filteredStudents = waitingStudents;
+
+    if (interviewerType === "hifz") {
+      filteredStudents = waitingStudents.filter(
+        (student) =>
+          student.studentLevel === "intermediate" ||
+          student.studentLevel === "meton",
+      );
+    } else if (interviewerType === "ijaza") {
+      filteredStudents = waitingStudents.filter(
+        (student) => student.studentLevel === "ijaza",
+      );
+    }
+    // For placement interviewers, no additional filtering needed
 
     return res.status(200).json({
       success: true,
-      waitingStudents: waitingStudents.map((student) => ({
+      interviewerInfo: {
+        id: interviewer.id,
+        name: interviewer.name,
+        type: interviewerType,
+        activeShift: interviewerShift,
+        workingDays: interviewerDays,
+      },
+      waitingStudents: filteredStudents.map((student) => ({
         id: student.id,
         name: student.name,
         email: student.email,
@@ -575,8 +650,18 @@ router.get("/waiting-students", async (req, res): Promise<any> => {
         createdAt: student.createdAt,
         selectedDays: student.selectedDays,
         selectedSections: student.selectedSections,
+        currentActiveShift: student.currentActiveShift,
+        matchingDays: ((student.selectedDays as string[]) || []).filter((day) =>
+          interviewerDays.includes(day),
+        ),
       })),
-      total: waitingStudents.length,
+      total: filteredStudents.length,
+      matchCriteria: {
+        isTested: false,
+        shiftMatch: interviewerShift,
+        daysIntersection: "At least one matching day",
+        levelFilter: interviewerType,
+      },
     });
   } catch (error: any) {
     console.error("Error fetching waiting students:", error);
