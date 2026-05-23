@@ -60,8 +60,9 @@ export function StudentManagementTable({
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        // تم التعديل هنا لاستخدام المسار النسبي الذي يوجهه الـ Proxy
-        const response = await fetch("/api/students");
+        const API_BASE_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:3000";
+        const response = await fetch(`${API_BASE_URL}/api/students`);
 
         if (!response.ok) {
           throw new Error("HTTP error " + response.status);
