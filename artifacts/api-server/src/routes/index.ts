@@ -3,6 +3,7 @@ import authRouter from "./auth.js";
 import sessionsRouter from "./sessions.js";
 import matchingRouter from "./matching.js";
 import shiftsRouter from "./shifts.js";
+import studentsRouter from "./students.js";
 
 const router = Router();
 
@@ -48,6 +49,12 @@ router.use("/matching", matchingRouter);
  * المسار النهائي سيكون: /api/shifts/...
  */
 router.use("/shifts", shiftsRouter);
+
+/**
+ * 🔹 ربط مسارات الطلاب (Students)
+ * المسار النهائي سيكون: /api/students/...
+ */
+router.use("/students", studentsRouter);
 
 /**
  * 🛡️ مسارات الإدارة (Admin Routes)

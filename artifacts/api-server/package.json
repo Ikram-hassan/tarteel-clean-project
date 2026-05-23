@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../../.env -- pnpm run build && dotenv -e ../../.env -- pnpm run start",
+    "dev": "dotenv-cli -e .env -- node --enable-source-maps --watch ./dist/index.mjs",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
