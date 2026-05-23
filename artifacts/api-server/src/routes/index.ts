@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import cors from "cors"; // 1. استيراد المكتبة
 import authRouter from "./auth.js";
 import sessionsRouter from "./sessions.js";
 import matchingRouter from "./matching.js";
@@ -7,17 +8,24 @@ import studentsRouter from "./students.js";
 
 const router = Router();
 
+// 2. تفعيل CORS لجميع المسارات في هذا الراوتر
+router.use(
+  cors({
+    origin: "https://tateel-5.netlify.app",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-role"], // أضفنا x-user-role هنا لأنك تستخدمها في الـ Middleware
+  }),
+);
+
 /**
  * 🛡️ برمجية وسيطة للتحقق من المشرفين (Admin Middleware)
- * قمنا بدمجها هنا مباشرة لتوفير الوقت وتجنب أخطاء الاستيراد
  */
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  // ملاحظة: هذا مجرد مثال للتحقق من الـ Role.
-  // يمكنك تعديله ليتوافق مع طريقة تخزين بيانات المستخدم لديك (مثل req.user.role)
   const userRole = req.headers["x-user-role"];
 
   if (userRole === "admin") {
-    next(); // المستخدم أدمن، اسمح له بالمرور
+    next();
   } else {
     res.status(403).json({
       error: "Forbidden",
@@ -28,38 +36,31 @@ const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * 🔹 ربط مسارات الهوية (Authentication)
- * المسار النهائي سيكون: /api/auth/...
  */
 router.use("/auth", authRouter);
 
 /**
  * 🔹 ربط مسارات الجلسات (Sessions)
- * المسار النهائي سيكون: /api/sessions/...
  */
 router.use("/sessions", sessionsRouter);
 
 /**
  * 🔹 ربط مسارات المطابقة الذكية (Smart Matching)
- * المسار النهائي سيكون: /api/matching/...
  */
 router.use("/matching", matchingRouter);
 
 /**
  * 🔹 ربط مسارات الورديات (Shifts)
- * المسار النهائي سيكون: /api/shifts/...
  */
 router.use("/shifts", shiftsRouter);
 
 /**
  * 🔹 ربط مسارات الطلاب (Students)
- * المسار النهائي سيكون: /api/students/...
  */
 router.use("/students", studentsRouter);
 
 /**
  * 🛡️ مسارات الإدارة (Admin Routes)
- * المسار النهائي سيكون: /api/admin/...
- * محمية بواسطة وظيفة isAdmin
  */
 router.get("/admin/dashboard", isAdmin, (req: Request, res: Response) => {
   res.json({
