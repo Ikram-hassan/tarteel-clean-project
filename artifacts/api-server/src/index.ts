@@ -7,21 +7,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * 🔒 تأمين التحميل المبكر للمتغيرات البيئية:
- * يتم استدعاء dotenv هنا كطبقة حماية إضافية لضمان أن المتغيرات (مثل DATABASE_URL و JWT_SECRET)
- * متوفرة في الذاكرة قبل استيراد موديول 'app'.
+ * 🔒 تأمين التحميل المبكر للمتغيرات البيئية
  */
-
-// 1. التحميل من مجلد السيرفر المحلي (إن وجد)
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
-
-// 2. التحميل من جذر المشروع (حيث يوجد الملف الرئيسي .env في الـ Monorepo)
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-
-// 3. التحميل عند التشغيل من داخل مجلد التوزيع dist
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-// 🚀 الآن استيراد باقي التطبيق بأمان بعد شحن المتغيرات
+// 🚀 استيراد التطبيق
 import app from "./app";
 import { logger } from "./lib/logger";
 
@@ -36,33 +28,28 @@ const port = Number(rawPort) || 3000;
  */
 const server = app.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening and environment initialized");
-  
-  // التحقق من صحة تحميل متغير قاعدة البيانات
+
+  // التحقق من صحة تحميل المتغيرات
   if (process.env["DATABASE_URL"]) {
-    console.log("✅ Database URL securely loaded from .env file.");
+    console.log("✅ Database URL securely loaded.");
   } else {
-    console.error("❌ Critical Error: DATABASE_URL not found. Database connections will fail.");
+    console.error("❌ Critical Error: DATABASE_URL not found.");
   }
 
-  // التحقق من وجود مفتاح التشفير الضروري لنظام الـ Admin Validation
-  if (!process.env["JWT_SECRET"]) {
-    logger.warn("⚠️ Warning: JWT_SECRET is missing. Admin authentication might fail.");
-  }
-
+  // تم تعديل هذه الرسالة لتعكس الحالة الحقيقية (سيرفر يعمل على الإنترنت)
   console.log(`
   🚀 Tarteel E-Maqraa Server Started Successfully!
-  🔗 Base URL:      http://localhost:${port}
-  📂 Auth Endpoint:  http://localhost:${port}/api/auth/login
-  🛡️ Admin Dashboard: http://localhost:${port}/api/admin/dashboard
+  🌍 Environment: Production/Cloud
+  📡 Port: ${port}
   `);
 });
 
 /**
- * معالجة أخطاء المنفذ (Port Errors)
+ * معالجة أخطاء المنفذ
  */
 server.on("error", (err: any) => {
   if (err.code === "EADDRINUSE") {
-    console.error(`❌ فشل التشغيل: المنفذ ${port} محجوز حالياً من قبل تطبيق آخر.`);
+    console.error(`❌ فشل التشغيل: المنفذ ${port} محجوز.`);
   } else {
     logger.error({ err }, "Error starting server");
   }
@@ -70,8 +57,7 @@ server.on("error", (err: any) => {
 });
 
 /**
- * الإغلاق الآمن (Graceful Shutdown)
- * يضمن إغلاق السيرفر ونظام الإدارة بشكل نظيف عند استلام إشارات الإنهاء
+ * الإغلاق الآمن
  */
 const shutdown = (signal: string) => {
   logger.info(`${signal} signal received: closing HTTP server`);
@@ -83,5 +69,3 @@ const shutdown = (signal: string) => {
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
-
-export default server;
