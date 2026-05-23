@@ -26,7 +26,7 @@ import {
 import "@livekit/components-styles";
 import { Track, DataPacket_Kind, type RemoteParticipant } from "livekit-client";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://tarteel-monorepo-api-server-v6ry.vercel.app";
 const LIVEKIT_URL =
   import.meta.env.VITE_LIVEKIT_URL ||
   "wss://tarteel-e-maqraa-ly5s2et3.livekit.cloud";
