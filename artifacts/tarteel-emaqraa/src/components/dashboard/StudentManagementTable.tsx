@@ -61,7 +61,7 @@ export function StudentManagementTable({
       try {
         setIsLoading(true);
         const API_BASE_URL =
-          import.meta.env.VITE_API_URL || "https://tarteel-monorepo-api-server-v6ry.vercel.app";
+          import.meta.env.VITE_API_URL || "/api";
         const response = await fetch(`${API_BASE_URL}/api/students`);
 
         if (!response.ok) {
