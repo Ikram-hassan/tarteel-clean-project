@@ -15,19 +15,44 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 // Module-level configuration
 // ---------------------------------------------------------------------------
 
-let _baseUrl: string | null = "/api";
+/**
+ * ✅ الحل النهائي: استخدام declare لتعريف ImportMeta يدوياً
+ * هذا يحل خطأ "Property 'env' does not exist on type 'ImportMeta'"
+ * بدون الحاجة لتعديل أي tsconfig.json
+ */
+declare const __VITE_API_URL__: string | undefined;
+
+// ✅ قراءة VITE_API_URL بطريقة آمنة تماماً من TypeScript
+function getViteApiUrl(): string | undefined {
+  try {
+    // هذا يعمل عند البناء بـ Vite (Frontend)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const env = (import.meta as any).env;
+    if (env && typeof env["VITE_API_URL"] === "string") {
+      return env["VITE_API_URL"] as string;
+    }
+  } catch {
+    // في بيئة Node.js أو SSR — import.meta.env غير متاح
+  }
+  return undefined;
+}
+
+const VITE_API_URL = getViteApiUrl();
+
+let _baseUrl: string | null = VITE_API_URL
+  ? VITE_API_URL.replace(/\/+$/, "")
+  : "/api";
+
+console.log(
+  `[customFetch] Base URL: "${_baseUrl}" | VITE_API_URL: "${VITE_API_URL ?? "NOT SET"}"`,
+);
+
 let _authTokenGetter: AuthTokenGetter | null = null;
 
-/**
- * Set a base URL that is prepended to every relative request URL.
- */
 export function setBaseUrl(url: string | null): void {
   _baseUrl = url ? url.replace(/\/+$/, "") : null;
 }
 
-/**
- * Register a getter that supplies a bearer auth token.
- */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
@@ -53,13 +78,18 @@ function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (!_baseUrl) return input;
   const url = resolveUrl(input);
 
-  if (!url.startsWith("/")) return input;
+  // إذا كان URL كاملاً، لا تُعدّل عليه
+  if (url.startsWith("http://") || url.startsWith("https://")) return input;
 
-  const absolute = `${_baseUrl}${url}`;
-  if (typeof input === "string") return absolute;
-  if (isUrl(input)) return new URL(absolute);
+  // إذا كان مساراً نسبياً، أضف الـ baseUrl
+  if (url.startsWith("/")) {
+    const absolute = `${_baseUrl}${url}`;
+    if (typeof input === "string") return absolute;
+    if (isUrl(input)) return new URL(absolute);
+    return new Request(absolute, input as Request);
+  }
 
-  return new Request(absolute, input as Request);
+  return input;
 }
 
 function resolveUrl(input: RequestInfo | URL): string {
@@ -298,7 +328,6 @@ export async function customFetch<T = unknown>(
     headersInit,
   );
 
-  // تحديث: إرسال الـ Content-Type تلقائياً للطلبات التي تحتوي على body
   if (init.body != null && !headers.has("content-type")) {
     if (typeof init.body === "string" && looksLikeJson(init.body)) {
       headers.set("content-type", "application/json");
@@ -316,20 +345,19 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  // إضافة التوكن تلقائياً
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
     if (token) headers.set("authorization", `Bearer ${token}`);
   }
 
-  // تحديث مهم: إرسال دور المستخدم (Role) تلقائياً للسيرفر إذا كان موجوداً
-  // هذا يساعد السيرفر في التحقق من الصلاحيات (Admin, Teacher, Student)
   if (typeof window !== "undefined" && !headers.has("x-user-role")) {
     const savedRole = localStorage.getItem("user_role");
     if (savedRole) headers.set("x-user-role", savedRole);
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
+
+  console.log(`[customFetch] ${method} → ${requestInfo.url}`);
 
   try {
     const response = await fetch(input, { ...init, method, headers });

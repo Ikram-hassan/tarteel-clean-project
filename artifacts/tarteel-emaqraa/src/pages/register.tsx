@@ -67,7 +67,9 @@ export default function Register() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [role, setRole] = useState<UserRole | null>(null);
   const [mode, setMode] = useState<"register" | "login">("register");
-  const [error, setError] = useState("");
+  // ✅ إصلاح 1: فصل رسائل الخطأ لكل نموذج بشكل مستقل
+  const [registerError, setRegisterError] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   // Form States
@@ -91,7 +93,6 @@ export default function Register() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Juz Range Options with exact Arabic labels as specified
   const JUZ_OPTIONS = [
     { value: "5", label: "5 Juz: (من الأحقاف إلى الناس)" },
     { value: "10", label: "10 Juz: (من العنكبوت إلى الناس)" },
@@ -101,7 +102,6 @@ export default function Register() {
     { value: "30", label: "30 Juz: (القرآن كاملاً)" },
   ];
 
-  // Ten Qira'at Options
   const QIRAAT_OPTIONS = [
     { value: "nafi", label: "نافع" },
     { value: "ibn_kathir", label: "ابن كثير" },
@@ -115,7 +115,6 @@ export default function Register() {
     { value: "khalaf", label: "خلف العاشر" },
   ];
 
-  // Interviewer Type Options
   const INTERVIEWER_OPTIONS = [
     { value: "placement", label: "Placement: تحديد مستوى" },
     { value: "hifz", label: "Hifz: حفظ" },
@@ -181,14 +180,14 @@ export default function Register() {
   const redirectByUserRole = (userRole: UserRole) => {
     switch (userRole) {
       case "admin":
-        setLocation("/dashboard/admin");
+        setLocation("/dashboard");
         break;
       case "student":
         setLocation("/dashboard/student");
         break;
       case "teacher":
       case "interviewer":
-        setLocation("/dashboard/teacher");
+        setLocation("/dashboard");
         break;
       default:
         setLocation("/");
@@ -197,9 +196,9 @@ export default function Register() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    // ✅ إصلاح 2: مسح خطأ التسجيل فقط
+    setRegisterError("");
 
-    // CRITICAL: Pull ALL form data from localStorage for Step 3 submissions
     const storedFormDataStr = localStorage.getItem("registrationFormData");
     let storedFormData: any = null;
 
@@ -215,7 +214,6 @@ export default function Register() {
       }
     }
 
-    // Use stored values if available (Step 3), otherwise use state (Step 2)
     const finalName = storedFormData?.name || name;
     const finalEmail = storedFormData?.email || email;
     const finalPassword = storedFormData?.password || password;
@@ -227,9 +225,8 @@ export default function Register() {
       storedFormData?.selectedSections || selectedSections;
     const finalCode = storedFormData?.code || code;
 
-    // CRITICAL: Validate that required fields are present
     if (!finalName || !finalEmail || !finalPassword || !finalPhone) {
-      setError("Please fill in all required fields");
+      setRegisterError("Please fill in all required fields");
       return;
     }
 
@@ -237,7 +234,7 @@ export default function Register() {
       (role === "teacher" || role === "interviewer" || role === "admin") &&
       !finalCode
     ) {
-      setError("Verification code is required");
+      setRegisterError("Verification code is required");
       return;
     }
 
@@ -250,7 +247,7 @@ export default function Register() {
         gender: finalGender,
         role,
         language: finalSelectedLang,
-        verificationCode: finalCode, // MUST be included for teacher/interviewer/admin
+        verificationCode: finalCode,
       };
 
       if (role !== "admin") {
@@ -265,9 +262,7 @@ export default function Register() {
       }
 
       if (role === "teacher") {
-        // CRITICAL: Ensure verificationCode is NOT deleted
         registrationData.teacherType = teacherType;
-
         if (teacherType === "beginner") {
           registrationData.levelsToTeach = ["beginner"];
         }
@@ -285,7 +280,6 @@ export default function Register() {
       }
 
       if (role === "interviewer") {
-        // CRITICAL: Ensure verificationCode is NOT deleted
         registrationData.interviewerType = interviewerType;
         registrationData.levelsToTeach = [];
       }
@@ -293,28 +287,100 @@ export default function Register() {
       console.log("[Register] Submitting payload:", registrationData);
       await register(registrationData);
 
-      // Clean up localStorage after successful registration
       localStorage.removeItem("registrationFormData");
 
       if (role) redirectByUserRole(role);
     } catch (err: any) {
       console.error("[Register] Error:", err);
-      setError(err.message || "Registration failed.");
+
+      // ✅ إصلاح 3: معالجة أخطاء Firebase بشكل صحيح وواضح للمستخدم
+      // الخطأ يأتي من use-auth.ts الذي يستدعي Firebase ثم الباك إيند
+      // نتحقق من كود الخطأ أو رسالته لعرض رسالة مناسبة
+      const errorCode = err?.code || "";
+      const errorMessage = err?.message || "";
+
+      if (
+        errorCode === "auth/email-already-in-use" ||
+        errorMessage.includes("email-already-in-use")
+      ) {
+        setRegisterError(
+          "This email is already registered. Please login instead.",
+        );
+      } else if (
+        errorCode === "auth/weak-password" ||
+        errorMessage.includes("weak-password")
+      ) {
+        setRegisterError(
+          "Password is too weak. Must be at least 6 characters.",
+        );
+      } else if (
+        errorCode === "auth/invalid-email" ||
+        errorMessage.includes("invalid-email")
+      ) {
+        setRegisterError("Invalid email format.");
+      } else if (
+        errorCode === "auth/network-request-failed" ||
+        errorMessage.includes("network")
+      ) {
+        // ✅ إصلاح 4: خطأ الشبكة يعني الباك إيند غير متاح أو CORS يمنع الاتصال
+        setRegisterError(
+          "Network error. Please check your connection and try again.",
+        );
+      } else if (err?.status === 400) {
+        // ✅ إصلاح 5: خطأ 400 من الباك إيند (بيانات غير صالحة أو كود تحقق خاطئ)
+        setRegisterError(
+          err?.data?.message ||
+            "Invalid data. Please check verification code and try again.",
+        );
+      } else if (err?.status === 409) {
+        // ✅ إصلاح 6: خطأ 409 Conflict من الباك إيند (مستخدم موجود مسبقاً)
+        setRegisterError(
+          "Account already exists in our system. Please login instead.",
+        );
+      } else {
+        setRegisterError(
+          errorMessage || "Registration failed. Please try again.",
+        );
+      }
     }
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    // ✅ إصلاح 7: مسح خطأ تسجيل الدخول فقط
+    setLoginError("");
     try {
       const response: any = await login(loginEmail, loginPassword);
-      // تصحيح السطر 161: الوصول الآمن للـ role سواء كان في response أو response.user
       const userRole = response?.user?.role || response?.role;
       if (userRole) {
         redirectByUserRole(userRole);
       }
     } catch (err: any) {
-      setError("Invalid email or password.");
+      console.error("[Login] Error:", err);
+      // ✅ إصلاح 8: رسائل خطأ تسجيل الدخول بشكل صحيح
+      const errorCode = err?.code || "";
+      const errorMessage = err?.message || "";
+
+      if (
+        errorCode === "auth/user-not-found" ||
+        errorCode === "auth/wrong-password" ||
+        errorCode === "auth/invalid-credential" ||
+        errorMessage.includes("invalid-credential")
+      ) {
+        setLoginError("Invalid email or password.");
+      } else if (
+        errorCode === "auth/too-many-requests" ||
+        errorMessage.includes("too-many-requests")
+      ) {
+        setLoginError("Too many failed attempts. Please try again later.");
+      } else if (
+        errorCode === "auth/network-request-failed" ||
+        errorMessage.includes("network")
+      ) {
+        setLoginError("Network error. Please check your connection.");
+      } else {
+        setLoginError("Login failed. Please try again.");
+      }
     }
   };
 
@@ -336,7 +402,9 @@ export default function Register() {
               value={mode}
               onValueChange={(v: any) => {
                 setMode(v);
-                setError("");
+                // ✅ إصلاح 9: مسح كلا الخطأين عند تبديل الـ Tab
+                setRegisterError("");
+                setLoginError("");
                 setShowPassword(false);
               }}
               className="w-full max-w-sm"
@@ -426,9 +494,10 @@ export default function Register() {
                       className="space-y-6"
                       autoComplete="off"
                     >
-                      {error && (
+                      {/* ✅ إصلاح 10: عرض registerError بدلاً من error */}
+                      {registerError && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm rounded-lg text-center border border-red-100">
-                          {error}
+                          {registerError}
                         </div>
                       )}
 
@@ -663,7 +732,6 @@ export default function Register() {
                         <Button
                           type="button"
                           onClick={() => {
-                            // CRITICAL: Save ALL form data to localStorage before moving to Step 3
                             const formData = {
                               name,
                               email,
@@ -714,7 +782,7 @@ export default function Register() {
                     </form>
                   </div>
                 ) : (
-                  // Step 3: Specialization Selection
+                  // Step 3
                   <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl border-t-8 border-tarteel-gold">
                     <div className="flex items-center gap-4 mb-8">
                       <Button
@@ -731,9 +799,9 @@ export default function Register() {
                     </div>
 
                     <form onSubmit={handleRegisterSubmit} className="space-y-6">
-                      {error && (
+                      {registerError && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm rounded-lg text-center border border-red-100">
-                          {error}
+                          {registerError}
                         </div>
                       )}
 
@@ -869,9 +937,10 @@ export default function Register() {
                 <h2 className="text-2xl font-bold text-tarteel-maroon mb-6 text-center">
                   Welcome Back
                 </h2>
-                {error && (
+                {/* ✅ إصلاح 11: عرض loginError بدلاً من error */}
+                {loginError && (
                   <div className="mb-4 p-3 bg-red-50 text-red-500 text-sm rounded-lg text-center border border-red-100">
-                    {error}
+                    {loginError}
                   </div>
                 )}
 

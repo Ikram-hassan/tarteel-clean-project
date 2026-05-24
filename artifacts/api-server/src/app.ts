@@ -1,70 +1,52 @@
-// @ts-nocheck
-import express, {
-  type Express,
-  type Request,
-  type Response,
-  type NextFunction,
-} from "express";
+import express from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
-import router from "./routes/index";
-import { logger } from "./lib/logger";
 
-const app: Express = express();
+const app = express();
 
-// 🔹 Middlewares
+// ✅ CORS يجب أن يكون أول middleware قبل أي route
+// هذا يضمن أن OPTIONS preflight requests تُعالج بشكل صحيح
+const allowedOrigins = [
+  // Frontend URLs على Vercel — أضف كل الـ URLs المحتملة
+  "https://tarteel-monorepo2-q3bp.vercel.app",
+  "https://tarteel-monorepo2-git-main-tarteel-s-projects4.vercel.app",
+  // للتطوير المحلي
+  "http://localhost:5173",
+  "http://localhost:3000",
+  // قراءة من environment variable (الأعلى أولوية)
+  ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+];
+
 app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req: (req) => ({ method: req.method, url: req.url?.split("?")[0] }),
-      res: (res) => ({ statusCode: res.statusCode }),
+  cors({
+    origin: (origin, callback) => {
+      // السماح بالطلبات بدون origin (مثل Postman أو server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error(`[CORS] Blocked origin: ${origin}`);
+        callback(new Error(`CORS policy: origin ${origin} not allowed`));
+      }
     },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    // ✅ مهم: يضمن أن الـ preflight OPTIONS يحصل على 200 وليس 404
+    optionsSuccessStatus: 200,
   }),
 );
 
-// 🔹 CORS configuration (تم تحسينه لمنع حظر Preflight)
-const corsOptions = {
-  origin: "https://tarteel-monorepo2-q3bp.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+// ✅ معالجة OPTIONS preflight يدوياً كطبقة أمان إضافية
+app.options("*", cors());
 
-app.use(cors(corsOptions));
-// معالجة صريحة لطلبات OPTIONS لضمان عدم حظرها
-app.options("*", cors(corsOptions));
-
-app.use(express.json());
+// Middleware أساسية
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-/**
- * 🔹 Root Route
- */
-app.get("/", (_req: Request, res: Response) => {
-  res.json({
-    status: "ok",
-    message: "Tarteel E-Maqraa API is running smoothly",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-/**
- * 🔥 API Routes
- */
-app.use("/api", router);
-
-/**
- * 🔥 Global Error Handler
- */
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error(err);
-  const statusCode = err.status || err.statusCode || 500;
-
-  res.status(statusCode).json({
-    status: "error",
-    message: err.message || "Internal Server Error",
-  });
-});
+// Routes تُضاف هنا بعد CORS
+// app.use("/api/auth", authRouter);
+// app.use("/api/sessions", sessionsRouter);
+// ... إلخ
 
 export default app;

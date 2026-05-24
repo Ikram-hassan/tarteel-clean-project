@@ -64,6 +64,7 @@ interface AuthContextType {
 }
 
 const SESSION_KEY = "tarteel_current_session";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -75,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerTeacherMutation = useRegisterTeacher();
 
   const registerAdminDirectly = async (data: any) => {
-    // تم استبدال الرابط الكامل بمسار نسبي /api/
-    const response = await fetch(`/api/auth/register/admin`, {
+    const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
+    const response = await fetch(`${cleanBaseUrl}/api/auth/register/admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -95,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchDbUser = async (uid: string) => {
     try {
-      // تم استبدال الرابط الكامل بمسار نسبي /api/
-      const response = await fetch(`/api/auth/login`, {
+      const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
+      const response = await fetch(`${cleanBaseUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: uid }),
@@ -198,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         } as AuthUser;
       } else if (values.role === "teacher" || values.role === "interviewer") {
+        // CRITICAL: Build the payload with ALL required fields
         const teacherPayload: any = {
           id: uid,
           name: values.name,
@@ -210,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           selectedSections: values.selectedSections || [],
         };
 
+        // Add teacher-specific specialization fields
         if (values.role === "teacher" && values.teacherType) {
           teacherPayload.teacherType = values.teacherType;
           if (values.teacherType === "intermediate" && values.juzRange) {
@@ -220,14 +223,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        // Add interviewer-specific specialization fields
         if (values.role === "interviewer" && values.interviewerType) {
           teacherPayload.interviewerType = values.interviewerType;
         }
+
+        console.log("[Auth] Teacher/Interviewer Payload:", teacherPayload);
 
         const response: any = await registerTeacherMutation.mutateAsync({
           data: teacherPayload,
         });
 
+        console.log("[Auth] Registration Response:", response);
         resultUser = { ...(response.data || response) } as AuthUser;
       } else {
         throw new Error("Unsupported role");

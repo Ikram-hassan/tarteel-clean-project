@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// fix __dirname compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,7 +13,6 @@ const basePath = process.env.BASE_PATH ?? "/";
 export default defineConfig({
   base: basePath,
 
-  // ✅ إضافة خاصية define لحل مشكلة ReferenceError: process is not defined جذرياً
   define: {
     "process.env": {},
   },
@@ -26,33 +24,33 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
       "@assets": path.resolve(__dirname, "..", "..", "attached_assets"),
     },
-
     dedupe: ["react", "react-dom"],
   },
 
   root: __dirname,
-
   publicDir: path.resolve(__dirname, "public"),
 
   build: {
-    // 🚀 تم التعديل هنا ليصبح المخرجات في dist مباشرة ليتوافق مع Vercel
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
-    // 🚀 إيقاف الـ sourcemap لتخطي تحذيرات البناء وسرعة التجميع
     sourcemap: false,
-    // ✅ Ensure public folder files (including _redirects) are copied to dist
     copyPublicDir: true,
   },
 
   server: {
     port,
     host: "0.0.0.0",
-    // ✅ إضافة الـ proxy لحل مشاكل الاتصال بالسيرفر
+    // ✅ الـ proxy يعمل فقط في بيئة التطوير المحلي (vite dev server)
+    // في Vercel، الطلبات تذهب مباشرة لـ VITE_API_URL عبر vercel.json rewrites
     proxy: {
       "/api": {
-        target: "https://tarteel-monorepo-api-server-v6ry.vercel.app",
+        target:
+          process.env.VITE_API_URL ||
+          "https://tarteel-monorepo-api-server-v6ry.vercel.app",
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        // ✅ لا تحذف /api من المسار لأن الباك إيند يتوقعه
+        rewrite: (p) => p,
       },
     },
   },

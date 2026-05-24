@@ -1,4 +1,5 @@
-"use client";
+console.log("API URL being used:", import.meta.env.VITE_API_URL);
+("use client");
 
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

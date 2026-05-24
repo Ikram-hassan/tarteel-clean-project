@@ -5,18 +5,23 @@
 
   "compilerOptions": {
     "ignoreDeprecations": "5.0",
+
     "baseUrl": ".",
     "noEmit": true,
     "jsx": "preserve",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    // ✅ إضافة "ES2020" لدعم import.meta بشكل كامل في TypeScript
+    "lib": ["ES2020", "ESNext", "DOM", "DOM.Iterable"],
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
+    // ✅ إضافة "module": "ESNext" لتفعيل import.meta
+    "module": "ESNext",
     "paths": {
       "@/*": ["src/*"]
     },
+    // ✅ "vite/client" موجود هنا بالفعل — هذا صحيح
     "types": ["node", "vite/client"],
     "forceConsistentCasingInFileNames": true
   },

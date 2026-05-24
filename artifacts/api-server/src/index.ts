@@ -1,33 +1,18 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import cors from "cors"; // 1. استيراد حزمة cors
 
 // إعداد المسارات المطلقة للوصول للملفات
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 🔒 تحميل المتغيرات البيئية
+// 🔒 تحميل المتغيرات البيئية (ترتيب الأولوية: .env المحلي أولاً)
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 import app from "./app.js";
 import { logger } from "./lib/logger.js";
-
-/**
- * 2. إعدادات الـ CORS
- * استخدام المتغير البيئي CORS_ORIGIN الذي قمت بإضافته في Vercel
- */
-const corsOptions = {
-  origin:
-    process.env.CORS_ORIGIN || "https://tarteel-monorepo2-q3bp.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions)); // تفعيل الـ CORS في التطبيق
 
 /**
  * إعدادات المنفذ
@@ -37,15 +22,17 @@ const port = Number(rawPort) || 3000;
 
 /**
  * ✅ تشغيل السيرفر
+ * ملاحظة: CORS يجب أن يُضبط في app.ts وليس هنا
+ * لأن app.ts يُعالج الطلبات قبل أي middleware في index.ts
  */
 const server = app.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening and environment initialized");
 
   console.log(`
   🚀 Tarteel E-Maqraa Server Started Successfully!
-  🌍 Environment: Production/Cloud
+  🌍 Environment: ${process.env.NODE_ENV || "development"}
   📡 Port: ${port}
-  🌐 CORS Origin: ${corsOptions.origin}
+  🌐 CORS Origin: ${process.env.CORS_ORIGIN || "not set"}
   `);
 });
 
