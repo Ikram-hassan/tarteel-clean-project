@@ -15,7 +15,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 // Module-level configuration
 // ---------------------------------------------------------------------------
 
-let _baseUrl: string | null = "http://localhost:3000"; 
+let _baseUrl: string | null = "/api";
 let _authTokenGetter: AuthTokenGetter | null = null;
 
 /**
@@ -36,7 +36,10 @@ function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
 
-function resolveMethod(input: RequestInfo | URL, explicitMethod?: string): string {
+function resolveMethod(
+  input: RequestInfo | URL,
+  explicitMethod?: string,
+): string {
   if (explicitMethod) return explicitMethod.toUpperCase();
   if (isRequest(input)) return input.method.toUpperCase();
   return "GET";
@@ -49,13 +52,13 @@ function isUrl(input: RequestInfo | URL): input is URL {
 function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (!_baseUrl) return input;
   const url = resolveUrl(input);
-  
+
   if (!url.startsWith("/")) return input;
 
   const absolute = `${_baseUrl}${url}`;
   if (typeof input === "string") return absolute;
   if (isUrl(input)) return new URL(absolute);
-  
+
   return new Request(absolute, input as Request);
 }
 
@@ -82,17 +85,19 @@ function getMediaType(headers: Headers): string | null {
 }
 
 function isJsonMediaType(mediaType: string | null): boolean {
-  return mediaType === "application/json" || Boolean(mediaType?.endsWith("+json"));
+  return (
+    mediaType === "application/json" || Boolean(mediaType?.endsWith("+json"))
+  );
 }
 
 function isTextMediaType(mediaType: string | null): boolean {
   return Boolean(
     mediaType &&
-      (mediaType.startsWith("text/") ||
-        mediaType === "application/xml" ||
-        mediaType === "text/xml" ||
-        mediaType.endsWith("+xml") ||
-        mediaType === "application/x-www-form-urlencoded"),
+    (mediaType.startsWith("text/") ||
+      mediaType === "application/xml" ||
+      mediaType === "text/xml" ||
+      mediaType.endsWith("+xml") ||
+      mediaType === "application/x-www-form-urlencoded"),
   );
 }
 
@@ -219,11 +224,16 @@ async function parseJsonBody(
   }
 }
 
-async function parseErrorBody(response: Response, method: string): Promise<unknown> {
+async function parseErrorBody(
+  response: Response,
+  method: string,
+): Promise<unknown> {
   if (hasNoBody(response, method)) return null;
   const mediaType = getMediaType(response.headers);
   if (mediaType && !isJsonMediaType(mediaType) && !isTextMediaType(mediaType)) {
-    return typeof response.blob === "function" ? response.blob() : response.text();
+    return typeof response.blob === "function"
+      ? response.blob()
+      : response.text();
   }
   const raw = await response.text();
   const normalized = stripBom(raw);
@@ -252,7 +262,8 @@ async function parseSuccessBody(
   requestInfo: { method: string; url: string },
 ): Promise<unknown> {
   if (hasNoBody(response, requestInfo.method)) return null;
-  const effectiveType = responseType === "auto" ? inferResponseType(response) : responseType;
+  const effectiveType =
+    responseType === "auto" ? inferResponseType(response) : responseType;
   switch (effectiveType) {
     case "json":
       return parseJsonBody(response, requestInfo);
@@ -262,7 +273,9 @@ async function parseSuccessBody(
     }
     case "blob":
       if (typeof response.blob !== "function") {
-        throw new TypeError("Blob responses are not supported in this runtime.");
+        throw new TypeError(
+          "Blob responses are not supported in this runtime.",
+        );
       }
       return response.blob();
   }
@@ -280,13 +293,20 @@ export async function customFetch<T = unknown>(
     throw new TypeError(`customFetch: ${method} requests cannot have a body.`);
   }
 
-  const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const headers = mergeHeaders(
+    isRequest(input) ? input.headers : undefined,
+    headersInit,
+  );
 
   // تحديث: إرسال الـ Content-Type تلقائياً للطلبات التي تحتوي على body
   if (init.body != null && !headers.has("content-type")) {
     if (typeof init.body === "string" && looksLikeJson(init.body)) {
       headers.set("content-type", "application/json");
-    } else if (typeof init.body === "object" && !(init.body instanceof FormData) && !(init.body instanceof Blob)) {
+    } else if (
+      typeof init.body === "object" &&
+      !(init.body instanceof FormData) &&
+      !(init.body instanceof Blob)
+    ) {
       headers.set("content-type", "application/json");
       init.body = JSON.stringify(init.body);
     }
