@@ -1,24 +1,36 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors"; // 1. استيراد حزمة cors
 
-// إعداد المسارات المطلقة للوصول للملفات في بيئة الـ Monorepo
+// إعداد المسارات المطلقة للوصول للملفات
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * 🔒 تأمين التحميل المبكر للمتغيرات البيئية
- */
+// 🔒 تحميل المتغيرات البيئية
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-// 🚀 استيراد التطبيق
-import app from "./app";
-import { logger } from "./lib/logger";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
 
 /**
- * إعدادات المنفذ (Port)
+ * 2. إعدادات الـ CORS
+ * استخدام المتغير البيئي CORS_ORIGIN الذي قمت بإضافته في Vercel
+ */
+const corsOptions = {
+  origin:
+    process.env.CORS_ORIGIN || "https://tarteel-monorepo2-q3bp.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions)); // تفعيل الـ CORS في التطبيق
+
+/**
+ * إعدادات المنفذ
  */
 const rawPort = process.env["PORT"];
 const port = Number(rawPort) || 3000;
@@ -29,36 +41,19 @@ const port = Number(rawPort) || 3000;
 const server = app.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening and environment initialized");
 
-  // التحقق من صحة تحميل المتغيرات
-  if (process.env["DATABASE_URL"]) {
-    console.log("✅ Database URL securely loaded.");
-  } else {
-    console.error("❌ Critical Error: DATABASE_URL not found.");
-  }
-
-  // تم تعديل هذه الرسالة لتعكس الحالة الحقيقية (سيرفر يعمل على الإنترنت)
   console.log(`
   🚀 Tarteel E-Maqraa Server Started Successfully!
   🌍 Environment: Production/Cloud
   📡 Port: ${port}
+  🌐 CORS Origin: ${corsOptions.origin}
   `);
 });
 
-/**
- * معالجة أخطاء المنفذ
- */
 server.on("error", (err: any) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`❌ فشل التشغيل: المنفذ ${port} محجوز.`);
-  } else {
-    logger.error({ err }, "Error starting server");
-  }
+  logger.error({ err }, "Error starting server");
   process.exit(1);
 });
 
-/**
- * الإغلاق الآمن
- */
 const shutdown = (signal: string) => {
   logger.info(`${signal} signal received: closing HTTP server`);
   server.close(() => {
