@@ -17,7 +17,9 @@ function getViteApiUrl(): string | undefined {
   try {
     const env = (import.meta as any).env;
     if (env && typeof env["VITE_API_URL"] === "string") {
-      return env["VITE_API_URL"] as string;
+      const val = env["VITE_API_URL"] as string;
+      // ✅ إذا كانت فارغة، اعتبرها غير موجودة
+      return val.trim() === "" ? undefined : val;
     }
   } catch {}
   return undefined;
@@ -25,11 +27,9 @@ function getViteApiUrl(): string | undefined {
 
 const VITE_API_URL = getViteApiUrl();
 
-// ✅ إذا كان VITE_API_URL موجوداً، احذف /api من نهايته لمنع التكرار
-// إذا كان فارغاً، استخدم "" حتى يعمل proxy الـ vercel.json
-let _baseUrl: string | null = VITE_API_URL
-  ? VITE_API_URL.replace(/\/+$/, "").replace(/\/api$/, "")
-  : "";
+// ✅ دائماً استخدم /api — الـ vercel.json proxy سيوجهه للـ backend
+// هذا يمنع تكرار /api/api عند وجود VITE_API_URL
+let _baseUrl: string | null = "/api";
 
 console.log(
   `[customFetch] Base URL: "${_baseUrl}" | VITE_API_URL: "${VITE_API_URL ?? "NOT SET"}"`,
@@ -69,6 +69,8 @@ function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (url.startsWith("http://") || url.startsWith("https://")) return input;
 
   if (url.startsWith("/")) {
+    // ✅ منع التكرار: إذا كان الـ URL يبدأ بـ /api والـ baseUrl هو /api، لا تضف مرة أخرى
+    if (_baseUrl === "/api" && url.startsWith("/api/")) return input;
     const absolute = `${_baseUrl}${url}`;
     if (typeof input === "string") return absolute;
     if (isUrl(input)) return new URL(absolute);
