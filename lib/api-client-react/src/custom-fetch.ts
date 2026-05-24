@@ -11,37 +11,25 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
-// ---------------------------------------------------------------------------
-// Module-level configuration
-// ---------------------------------------------------------------------------
-
-/**
- * ✅ الحل النهائي: استخدام declare لتعريف ImportMeta يدوياً
- * هذا يحل خطأ "Property 'env' does not exist on type 'ImportMeta'"
- * بدون الحاجة لتعديل أي tsconfig.json
- */
 declare const __VITE_API_URL__: string | undefined;
 
-// ✅ قراءة VITE_API_URL بطريقة آمنة تماماً من TypeScript
 function getViteApiUrl(): string | undefined {
   try {
-    // هذا يعمل عند البناء بـ Vite (Frontend)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const env = (import.meta as any).env;
     if (env && typeof env["VITE_API_URL"] === "string") {
       return env["VITE_API_URL"] as string;
     }
-  } catch {
-    // في بيئة Node.js أو SSR — import.meta.env غير متاح
-  }
+  } catch {}
   return undefined;
 }
 
 const VITE_API_URL = getViteApiUrl();
 
+// ✅ إذا كان VITE_API_URL موجوداً، احذف /api من نهايته لمنع التكرار
+// إذا كان فارغاً، استخدم "" حتى يعمل proxy الـ vercel.json
 let _baseUrl: string | null = VITE_API_URL
-  ? VITE_API_URL.replace(/\/+$/, "")
-  : "/api";
+  ? VITE_API_URL.replace(/\/+$/, "").replace(/\/api$/, "")
+  : "";
 
 console.log(
   `[customFetch] Base URL: "${_baseUrl}" | VITE_API_URL: "${VITE_API_URL ?? "NOT SET"}"`,
@@ -78,10 +66,8 @@ function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (!_baseUrl) return input;
   const url = resolveUrl(input);
 
-  // إذا كان URL كاملاً، لا تُعدّل عليه
   if (url.startsWith("http://") || url.startsWith("https://")) return input;
 
-  // إذا كان مساراً نسبياً، أضف الـ baseUrl
   if (url.startsWith("/")) {
     const absolute = `${_baseUrl}${url}`;
     if (typeof input === "string") return absolute;

@@ -64,7 +64,29 @@ interface AuthContextType {
 }
 
 const SESSION_KEY = "tarteel_current_session";
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
+// ✅ Safe API URL — never falls back to localhost in production
+const getApiBaseUrl = (): string => {
+  const fromEnv = import.meta.env.VITE_API_URL as string | undefined;
+
+  if (fromEnv && fromEnv.trim() !== "") {
+    const url = fromEnv.trim().replace(/\/+$/, "");
+    // Block localhost in production build
+    if (import.meta.env.PROD && url.includes("localhost")) {
+      console.error(
+        "[Auth] VITE_API_URL points to localhost in production! Falling back to relative /api",
+      );
+      return "/api";
+    }
+    return url;
+  }
+
+  return "/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log(`[Auth] API_BASE_URL resolved to: "${API_BASE_URL}"`);
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -76,8 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerTeacherMutation = useRegisterTeacher();
 
   const registerAdminDirectly = async (data: any) => {
-    const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
-    const response = await fetch(`${cleanBaseUrl}/api/auth/register/admin`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register/admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -94,17 +115,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return responseData;
   };
 
-  const fetchDbUser = async (uid: string) => {
+  const fetchDbUser = async (uid: string): Promise<AuthUser | null> => {
     try {
-      const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
-      const response = await fetch(`${cleanBaseUrl}/api/auth/login`, {
+      // ✅ Guard: never call localhost in production
+      if (import.meta.env.PROD && API_BASE_URL.includes("localhost")) {
+        console.error(
+          "[Auth] Blocked fetchDbUser — API_BASE_URL is localhost in production",
+        );
+        return null;
+      }
+
+      console.log(`[Auth] fetchDbUser → POST ${API_BASE_URL}/api/auth/login`);
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: uid }),
       });
-      if (!response.ok) return null;
+
+      if (!response.ok) {
+        console.warn(`[Auth] fetchDbUser failed — status: ${response.status}`);
+        return null;
+      }
+
       return await response.json();
     } catch (error) {
+      console.error("[Auth] fetchDbUser error:", error);
       return null;
     }
   };
@@ -114,13 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       firebaseAuth,
       async (firebaseUser) => {
         if (firebaseUser) {
+          // Load cached session immediately for fast UI
           const savedSession = localStorage.getItem(SESSION_KEY);
-          if (savedSession) setUser(JSON.parse(savedSession));
+          if (savedSession) {
+            try {
+              setUser(JSON.parse(savedSession));
+            } catch {
+              localStorage.removeItem(SESSION_KEY);
+            }
+          }
 
+          // Then fetch fresh data from DB
           const dbUser = await fetchDbUser(firebaseUser.uid);
           if (dbUser) {
             setUser(dbUser);
             localStorage.setItem(SESSION_KEY, JSON.stringify(dbUser));
+          } else if (!savedSession) {
+            // No DB data and no cache — clear state
+            setUser(null);
           }
         } else {
           setUser(null);
@@ -199,7 +246,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         } as AuthUser;
       } else if (values.role === "teacher" || values.role === "interviewer") {
-        // CRITICAL: Build the payload with ALL required fields
         const teacherPayload: any = {
           id: uid,
           name: values.name,
@@ -212,7 +258,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           selectedSections: values.selectedSections || [],
         };
 
-        // Add teacher-specific specialization fields
         if (values.role === "teacher" && values.teacherType) {
           teacherPayload.teacherType = values.teacherType;
           if (values.teacherType === "intermediate" && values.juzRange) {
@@ -223,7 +268,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Add interviewer-specific specialization fields
         if (values.role === "interviewer" && values.interviewerType) {
           teacherPayload.interviewerType = values.interviewerType;
         }

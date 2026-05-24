@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://tarteel-monorepo-api-server-v6ry.vercel.app/api/:path*"
+      "destination": "https://tarteel-monorepo-api-server-v6ry.vercel.app/:path*"
     },
     {
       "source": "/(.*)",
