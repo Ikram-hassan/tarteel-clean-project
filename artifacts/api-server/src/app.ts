@@ -25,7 +25,7 @@ app.use(
 
 // 🔹 CORS configuration (تم تحسينه لمنع حظر Preflight)
 const corsOptions = {
-  origin: "https://tateel-5.netlify.app",
+  origin: "https://tarteel-monorepo2-q3bp.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
