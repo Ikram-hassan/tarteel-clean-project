@@ -1,12 +1,18 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://tarteel-monorepo-api-server-v6ry.vercel.app/:path*"
+      "src": "/api/api/(.*)",
+      "dest": "https://tarteel-monorepo-api-server-v6ry.vercel.app/api/$1",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "https://tarteel-monorepo-api-server-v6ry.vercel.app/api/$1",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
